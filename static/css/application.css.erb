@@ -1,0 +1,296 @@
+/*
+ * This is a manifest file that'll be compiled into application.css, which will include all the files
+ * listed below.
+ *
+ * Any CSS and SCSS file within this directory, lib/assets/stylesheets, vendor/assets/stylesheets,
+ * or vendor/assets/stylesheets of plugins, if any, can be referenced here using a relative path.
+ *
+ * You're free to add application-wide styles to this file and they'll appear at the top of the
+ * compiled file, but it's generally better to create a new file per style scope.
+ *
+ * Removed formtastic CSS to prevent bootstrap screw-up
+ *
+ *= require bootstrap.min
+ *= require bootstrap-default-theme
+ *= require yeti
+ *= require_self
+ *= require font-awesome
+ *= require home
+ *= require event_sessions
+ */
+
+body {
+  position: relative; /* For scrollyspy */
+  padding-top: 50px; /* Account for fixed navbar */
+}
+
+.container a {
+  text-decoration: none;
+}
+
+/* http://rvg.me/2013/11/using-bootstrap-3-with-rails-4/ */
+@font-face {
+  font-family: 'Glyphicons Halflings';
+  src: url('<%= asset_path("glyphicons-halflings-regular.eot") %>');
+  src: url('<%= asset_path("glyphicons-halflings-regular.eot?#iefix") %>') format('embedded-opentype'),
+       url('<%= asset_path("glyphicons-halflings-regular.woff") %>') format('woff'),
+       url('<%= asset_path("glyphicons-halflings-regular.ttf") %>') format('truetype'),
+       url('<%= asset_path("glyphicons-halflings-regular.svg#glyphicons_halflingsregular") %>') format('svg');
+}
+
+#main-content {
+  min-height: 450px;
+}
+
+.red {
+  color: #d9534f;
+}
+
+.blue {
+  color: #428bca;
+}
+
+.green {
+  color: #5cb85c;
+}
+
+.orange {
+  color: #f0ad4e;
+}
+
+.text-justify {
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+#chapter-map {
+  height: 400px;
+  width: 100%;
+  margin-bottom:4rem!important;
+}
+
+/*go to top button css */
+#back-to-top {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #333;
+  color: #fff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  text-decoration : none;
+  text-align: center;
+  line-height: 40px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+#back-to-top.show {
+  opacity: 1;
+}
+
+#back-to-top:hover {
+  background-color: #555;
+}
+
+#back-to-top:before {
+  content: "\f077";
+  font-family: "FontAwesome";
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+.search-container {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px;
+}
+
+.search-wrapper {
+  position: relative;
+  width: 250px;
+}
+
+#searchInput {
+  width: 100%;
+  padding: 10px 15px 10px 40px;
+  font-size: 16px;
+  border: none;
+  border-bottom: 2px solid #3498db;
+  background-color: transparent;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+#searchInput:focus {
+  border-color: #2980b9;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #7f8c8d;
+}
+
+.chapters-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 30px;
+  padding: 30px;
+}
+
+.chapter-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Poppins', sans-serif;
+  position: relative;
+}
+
+.chapter-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+}
+
+.chapter-img-container {
+  position: relative;
+  overflow: hidden;
+  height: 200px;
+}
+
+.chapter-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.chapter-card:hover .chapter-img {
+  transform: scale(1.1);
+}
+
+.card-body {
+  padding: 20px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  color: #2c3e50;
+  letter-spacing: 0.5px;
+}
+
+.card-text {
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #34495e;
+  margin-bottom: 15px;
+}
+
+.text-muted {
+  font-size: 13px;
+  color: #7f8c8d;
+}
+
+.chapter-status {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.chapter-active {
+  background-image: radial-gradient(circle, rgba(125,255,173,0.1), rgba(125,255,173,0.5));
+}
+
+.chapter-inactive {
+  background-image: radial-gradient(circle, rgba(255,102,102,0.1), rgba(255,102,102,0.6));
+}
+
+.chapter-active .chapter-status {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.chapter-inactive .chapter-status {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.chapter-details {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 15px;
+  border-top: 1px solid #ecf0f1;
+}
+
+.event-count {
+  display: flex;
+  align-items: center;
+}
+
+.event-icon {
+  margin-right: 5px;
+  font-size: 16px;
+}
+
+.learn-more {
+  background-color: #3498db;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.learn-more:hover {
+  background-color: #2980b9;
+}
+
+.upcoming-events {
+  display: flex;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.upcoming-events .event-icon {
+  margin-right: 8px;
+}
+.upcoming-events .text-muted {
+  color: #6c757d;
+}
+
+/* Autocomplete JS */
+.autocomplete-suggestions { border: 1px solid #999; background: #FFF; cursor: default; overflow: auto; -webkit-box-shadow: 1px 4px 3px rgba(50, 50, 50, 0.64); -moz-box-shadow: 1px 4px 3px rgba(50, 50, 50, 0.64); box-shadow: 1px 4px 3px rgba(50, 50, 50, 0.64); }
+.autocomplete-suggestion { padding: 2px 5px; white-space: nowrap; overflow: hidden; }
+.autocomplete-no-suggestion { padding: 2px 5px;}
+.autocomplete-selected { background: #F0F0F0; }
+.autocomplete-suggestions strong { font-weight: bold; color: #000; }
+.autocomplete-group { padding: 2px 5px; }
+.autocomplete-group strong { font-weight: bold; font-size: 16px; color: #000; display: block; border-bottom: 1px solid #000; }
+
+.autocomplete-input input { font-size: 28px; padding: 10px; border: 1px solid #CCC; display: block; margin: 20px 0; }

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load static %}
+{% block page_title %}null Community Platform{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="jumbotron">
+      <h1>
+        <center>
+          Welcome to <strong>null</strong><br>
+          <small>The Open Security Community</small>
+        </center>
+      </h1>
+      <p class="text-justify">
+        null is one of the most active, open security communities.
+        Registered as a non-profit society in 2010. One of the main objectives for null is spreading information security awareness.
+        In a calendar year, null chapters host about 100+ events across security domains and impact about 8000-10000 security professionals, enthusiasts, and beginners with their initiatives.
+        null is open, professional, inclusive, responsible, and most importantly completely volunteer-driven.
+      </p>
+      <center>
+        {% if not user.is_authenticated %}
+          <a href="{% url 'account_signup' %}" class="btn btn-danger btn-lg"><i class="fa fa-group"></i> Join The null Community</a>
+        {% endif %}
+        <a href="{% url 'content:page_detail' '3-how-to-start-a-chapter' %}" class="btn btn-lg btn-danger btn-primary"><i class="fa fa-thumb-tack"></i> Start a Chapter</a>
+      </center>
+      <br>
+      <center>
+        <a href="{% url 'chapters:list' %}" class="btn btn-lg btn-primary"><i class="fa fa-globe"></i> Find a Chapter Near You</a>
+        <a href="https://linktr.ee/nullcommunity" class="btn btn-lg btn-primary" target="_blank"><i class="fa fa-link"></i> Social Network Links</a>
+        <a href="https://jobs.null.community" class="btn btn-lg btn-primary" target="_blank"><i class="fa fa-briefcase"></i> Jobs Portal</a>
+      </center>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-4">
+    <div class="panel panel-primary">
+      <div class="panel-heading"><center>Active Chapters</center></div>
+      <a href="{% url 'chapters:list' %}" style="color:inherit">
+        <div class="panel-body"><center><h1>{{ active_chapters_count }}</h1></center></div>
+      </a>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="panel panel-primary">
+      <div class="panel-heading"><center>Upcoming Events</center></div>
+      <a href="{% url 'core:upcoming' %}" style="color:inherit">
+        <div class="panel-body"><center><h1>{{ events.count }}</h1></center></div>
+      </a>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="panel panel-primary">
+      <div class="panel-heading"><center>Security Jobs</center></div>
+      <a href="http://jobs.null.community/" target="_blank" style="color:inherit">
+        <div class="panel-body"><center><h1><i class="fa fa-external-link"></i></h1></center></div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="row" style="margin-bottom:1em;">
+  <h1><center>Upcoming Events</center></h1>
+  <div class="col-md-12">
+    {% include "partials/_event_list.html" %}
+  </div>
+</div>
+
+<div class="row" style="margin-bottom:1em;">
+  <h1><center>Engage with <strong>null</strong></center></h1>
+  <hr>
+  <div class="col-md-4">
+    <div class="panel panel-default">
+      <div class="panel-heading"><center><h3 class="panel-title">Mailing List</h3></center></div>
+      <div class="panel-body">
+        <p class="lead text-justify" style="min-height:360px;">
+          Join the mailing list to keep yourself updated about our activities &amp; events. Join it for deep technical discussions revolving around computer security &amp; nothing else. Some of the best security professionals answer queries, discuss new findings and more, all in the mailing list.
+        </p>
+        <a href="{{ CFG_GOOGLE_GROUPS_URL }}" class="btn btn-danger btn-block" target="_blank"><i class="fa fa-group"></i> Subscribe to Group</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="panel panel-default">
+      <div class="panel-heading"><center><h3 class="panel-title">Become a Volunteer</h3></center></div>
+      <div class="panel-body">
+        <p class="lead text-justify" style="min-height:360px;">
+          null is purely driven by volunteers. Volunteers support and contribute in making the community the way it is. Benefits of being a volunteer include a cool @null.community email address, access to null events, mentorship opportunities with the best in the Industry and more. So become a volunteer, now!
+        </p>
+        <a href="{{ CFG_VOLUNTEER_FORM_URL }}" class="btn btn-danger btn-block" target="_blank"><i class="fa fa-user-plus"></i> Become a Volunteer</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="panel panel-default">
+      <div class="panel-heading"><center><h3 class="panel-title">Start a Chapter</h3></center></div>
+      <div class="panel-body">
+        <p class="lead text-justify" style="min-height:360px;">
+          Start a new chapter! A few conditions apply: A minimum of 3 interested people are required to begin the process of creating a new chapter. Once you have the required number, you need to conduct a pre-null meet and fulfill our criteria. If you think you are ready, get started by clicking below
+        </p>
+        <a href="{% url 'content:page_detail' '3-how-to-start-a-chapter' %}" class="btn btn-danger btn-block"><i class="fa fa-thumb-tack"></i> Start a Chapter</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

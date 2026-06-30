@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block page_title %}{{ chapter.name }} Chapter - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <h2>
+      {{ chapter.name }} Chapter
+      <small>{{ chapter.state }}</small>
+      <a href="#"><i class="fa fa-calendar"></i><small>Export Calendar</small></a>
+      {% if user.is_authenticated and user.managed_chapter and chapter in user.managed_chapters.all %}
+        <small><a href="#"><i class="fa fa-edit"></i></a></small>
+      {% endif %}
+    </h2>
+    <div class="row">
+      <div class="col-md-5">
+        <div class="col-md-12">
+          <img src="{{ chapter.image_url }}" class="img-rounded" width="400" height="350" alt="{{ chapter.name }}">
+        </div>
+        <div class="col-md-12">
+          <center>
+            <ul class="nav navbar-nav">
+              {% if chapter.has_twitter_handle %}
+              <li><a href="{{ chapter.twitter_handle|safe_url }}" target="_blank"><i class="fa fa-twitter fa-4x"></i></a></li>
+              {% endif %}
+              {% if chapter.has_facebook_profile %}
+              <li><a href="{{ chapter.facebook_profile|safe_url }}" target="_blank"><i class="fa fa-facebook fa-4x"></i></a></li>
+              {% endif %}
+              {% if chapter.has_github_profile %}
+              <li><a href="{{ chapter.github_profile|safe_url }}" target="_blank"><i class="fa fa-github fa-4x"></i></a></li>
+              {% endif %}
+            </ul>
+          </center>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="row">
+          <div class="col-md-12">{{ chapter.description|markdown_html }}</div>
+        </div>
+        <div class="row">
+          <div class="col-md-12">
+            <h3>Leaders</h3>
+            <ul>
+              {% for leader in chapter.leads %}
+              <li><a href="{% url 'accounts:public_profile' leader.pk %}">{{ leader.name }}</a></li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h2>Upcoming Events <small>{{ chapter.name }} Chapter</small></h2></div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    {% if not upcoming_events %}
+      <div class="alert alert-danger">No upcoming event for this chapter.</div>
+    {% else %}
+      {% include "partials/_event_list.html" with events=upcoming_events %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h2>Past Events <small>{{ chapter.name }} Chapter</small></h2></div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    {% if not past_events %}
+      <div class="alert alert-danger">No past event for this chapter.</div>
+    {% else %}
+      {% include "partials/_event_list.html" with events=past_events %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

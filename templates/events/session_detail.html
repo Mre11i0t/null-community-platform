@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block page_title %}{{ session.name }}{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h2>
+        {{ session.name }}
+        <small>
+          <a href="{% url 'events:detail' session.event.pk %}" style="text-decoration:none;">
+            <span class="label label-success">{{ session.event.descriptive_name }}</span>
+          </a>
+        </small>
+      </h2>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-4">
+    <img src="{{ session.user.avatar_url }}" class="img-rounded" width="200" alt="{{ session.speaker_name }}">
+  </div>
+  <div class="col-md-8">
+    <div class="row">
+      <div class="col-md-6">
+        {% if session.presentation_url %}<p><a href="{{ session.presentation_url|safe_url }}" target="_blank">Slides</a></p>{% endif %}
+      </div>
+      <div class="col-md-6">
+        {% if session.video_url %}<p><a href="{{ session.video_url|safe_url }}" target="_blank">Video</a></p>{% endif %}
+      </div>
+    </div>
+    <h3>Abstract</h3>
+    <blockquote>{{ session.description|markdown_html }}</blockquote>
+
+    <h3>Speaker</h3>
+    <p style="font-size:110%">
+      <strong><a href="{% url 'accounts:public_profile' session.user.pk %}" style="text-decoration:none;">{{ session.speaker_name }}</a></strong>
+    </p>
+    <p>{{ session.user.about_me|markdown_html }}</p>
+
+    <h3>Timing</h3>
+    <p>Starts at <strong>{{ session.start_time|date:"l F d Y, g:i A" }}</strong>.</p>
+
+    <h3>Resources</h3>
+    {% if session.presentation_url %}<a href="{{ session.presentation_url|safe_url }}" class="fa-file-powerpoint-o fa fa-5x" target="_blank"></a>{% endif %}
+    &nbsp;
+    {% if session.video_url %}<a href="{{ session.video_url|safe_url }}" class="fa-file-video-o fa fa-5x" target="_blank"></a>{% endif %}
+  </div>
+</div>
+{# Comments/voting (event_sessions/_reaction.html.erb in the original) not yet ported — see task #9. #}
+{% endblock %}

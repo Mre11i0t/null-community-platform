@@ -1,0 +1,67 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@null0x00">
+  <meta name="twitter:title" content="{% block title %}{{ CFG_APP_TITLE }}{% endblock %}">
+  <meta name="twitter:description" content="{% block description %}{{ CFG_APP_DESCRIPTION }}{% endblock %}">
+  <title>{% block page_title %}{{ CFG_APP_TITLE }}{% endblock %}</title>
+
+  <!-- Bootstrap 3 + Bootswatch Yeti theme + Font Awesome 4 — same stack
+       the original app loaded via the Rails asset pipeline (bootstrap-sass,
+       bootswatch-rails, font-awesome-rails); served from CDN here instead. -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.1/yeti/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+  <link rel="stylesheet" href="{% static 'css/home.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  {% include "partials/_announcement.html" %}
+  {% include "partials/_header.html" %}
+
+  {% if messages %}
+  <div class="container">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-block">
+      <button type="button" class="close" data-dismiss="alert">x</button>
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div id="main-content" class="container">
+    {% block content %}{% endblock %}
+  </div>
+
+  <a href="#" id="back-to-top" class="back-to-top" data-toggle="tooltip" data-placement="top" title="Back to top">
+    <i class="fa"></i>
+  </a>
+
+  {% include "partials/_footer.html" %}
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.1/yeti/bootstrap.min.js"></script>
+  <script src="{% static 'js/application.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+  <script>
+    $(document).ready(function() {
+      $(window).scroll(function() {
+        if ($(this).scrollTop() > 100) {
+          $('.back-to-top').addClass('show');
+        } else {
+          $('.back-to-top').removeClass('show');
+        }
+      });
+      $('.back-to-top').click(function() {
+        $('html, body').animate({ scrollTop: 0 }, 'slow');
+        return false;
+      });
+    });
+  </script>
+</body>
+</html>

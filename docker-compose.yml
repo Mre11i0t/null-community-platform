@@ -1,0 +1,19 @@
+services:
+  db:
+    image: mysql:8.0
+    platform: linux/amd64
+    environment:
+      MYSQL_ROOT_PASSWORD: s0m3p4ssw0rd
+      MYSQL_DATABASE: swachalit
+    ports:
+      - "3307:3306"
+    volumes:
+      - ncp-mysql:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+
+volumes:
+  ncp-mysql:

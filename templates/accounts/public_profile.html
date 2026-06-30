@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block page_title %}{{ profile_user.name }} - null Community Profile{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-4 text-center">
+    <img src="{{ profile_user.avatar_url }}" class="img-circle" width="180" alt="{{ profile_user.name }}">
+    <h1>{{ profile_user.name }}</h1>
+    <p>{{ profile_user.about_me|markdown_html }}</p>
+    <ul class="list-inline">
+      {% if profile_user.has_facebook_profile %}<li><a href="{{ profile_user.facebook_profile|safe_url }}" target="_blank"><i class="fa fa-facebook fa-2x"></i></a></li>{% endif %}
+      {% if profile_user.has_twitter_handle %}<li><a href="{{ profile_user.twitter_handle|safe_url }}" target="_blank"><i class="fa fa-twitter fa-2x"></i></a></li>{% endif %}
+      {% if profile_user.linkedin_profile %}<li><a href="{{ profile_user.linkedin_profile|safe_url }}" target="_blank"><i class="fa fa-linkedin fa-2x"></i></a></li>{% endif %}
+      {% if profile_user.has_github_profile %}<li><a href="{{ profile_user.github_profile|safe_url }}" target="_blank"><i class="fa fa-github fa-2x"></i></a></li>{% endif %}
+      {% if profile_user.homepage %}<li><a href="{{ profile_user.homepage|safe_url }}" target="_blank"><i class="fa fa-link fa-2x"></i></a></li>{% endif %}
+    </ul>
+    <div class="row">
+      <div class="col-xs-6"><span style="font-size:2em;">{{ registered_participation.count }}</span><br>Attended</div>
+      <div class="col-xs-6"><span style="font-size:2em;">{{ speaker_sessions.count }}</span><br>Delivered</div>
+    </div>
+    <p class="text-muted" style="margin-top:1em;">Joined {{ profile_user.created_at|date:"F d Y" }}</p>
+  </div>
+  <div class="col-md-8">
+    <h2>Sessions Delivered</h2>
+    <ul class="list-unstyled">
+      {% for s in speaker_sessions %}
+      <li>
+        <a href="{{ s.get_absolute_url }}">{{ s.name }}</a>
+        — {{ s.event.start_time|date:"F d Y" }}
+        <span class="label label-success">{{ s.event.event_type.name }}</span>
+        <span class="label label-success">{{ s.event.chapter.name }}</span>
+      </li>
+      {% empty %}
+      <li class="text-muted">No sessions delivered yet.</li>
+      {% endfor %}
+    </ul>
+
+    <h2>Events Attended</h2>
+    <ul class="list-unstyled">
+      {% for reg in registered_participation %}
+        {% if reg.event.public %}
+        <li>
+          <a href="{% url 'events:detail' reg.event.pk %}">{{ reg.event.name|truncatechars:32 }}</a>
+          — {{ reg.event.start_time|date:"F d Y" }}
+          <span class="label label-success">{{ reg.event.event_type.name }}</span>
+          <span class="label label-success">{{ reg.event.chapter.name }}</span>
+        </li>
+        {% endif %}
+      {% empty %}
+      <li class="text-muted">No events attended yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

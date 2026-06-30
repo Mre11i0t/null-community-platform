@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block page_title %}Events Archive - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h2>Events Archive <small>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</small></h2>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    {% regroup events by start_time|date:"F Y" as month_groups %}
+    {% for group in month_groups %}
+      <p class="lead">{{ group.grouper }}</p>
+      <hr>
+      {% for event in group.list %}
+        <p>
+          <strong><u>{{ event.start_time|date:"Y-m-d" }}</u></strong> &nbsp;
+          <a href="{% url 'chapters:detail' event.chapter.pk %}"><span class="label label-info">{{ event.chapter.name }}</span></a> &nbsp;&nbsp;
+          <a href="{% url 'events:detail' event.pk %}">{{ event.descriptive_name }}</a>
+          <small>
+            <span class="label label-success">Sessions: {{ event.event_sessions.count }}</span>
+            <span class="label label-info">Registrations: {{ event.event_registrations.count }}</span>
+          </small>
+        </p>
+      {% endfor %}
+      <br>
+    {% endfor %}
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav>
+      <ul class="pagination">
+        {% if page_obj.has_previous %}
+          <li><a href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          <li {% if num == page_obj.number %}class="active"{% endif %}><a href="?page={{ num }}">{{ num }}</a></li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+          <li><a href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

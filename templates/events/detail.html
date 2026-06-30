@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% load static core_extras %}
+{% block page_title %}{{ event.descriptive_name }}{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h1>
+        {{ event.descriptive_name }}
+        <span class="pull-right">
+          {% if user.is_authenticated and user_registration %}
+            <a href="#" class="btn btn-danger"><i class="fa fa-users"></i> Cancel Registration</a>
+          {% else %}
+            <a href="#" class="btn btn-success"><i class="fa fa-users"></i> {{ event.register_name }}</a>
+          {% endif %}
+        </span>
+      </h1>
+      <p class="lead">
+        {{ event.start_time|date:"l F d Y g:i A" }}
+        <small><span class="label label-success">{{ event.event_type.name }}</span></small>
+        <small><a href="{% url 'chapters:detail' event.chapter.pk %}"><span class="label label-success">{{ event.chapter.name }}</span></a></small>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="bs-callout bs-callout-info2">
+      <div class="row">
+        <div class="col-md-12">{{ event.event_type.description|markdown_html }}</div>
+      </div>
+      <div class="row" style="padding:1em;">
+        <div class="col-md-12">
+          <h4>Proposed sessions for this event:</h4>
+          <ul>
+            {% for s in sessions %}
+              {% if not s.placeholder %}
+              <li>{{ s.name }} by <strong>{{ s.speaker_name }}</strong></li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+          <small>Note: The session details including schedule are available below.</small>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">{{ event.description|markdown_html }}</div>
+      </div>
+    </div>
+
+    <table class="table table-bordered">
+      <tr><th width="20%">Date</th><td>{{ event.start_time|date:"l F d Y" }}</td></tr>
+      <tr><th>Chapter</th><td><a href="{% url 'chapters:detail' event.chapter.pk %}">{{ event.chapter.name }}</a></td></tr>
+      <tr><th>Registrations</th><td>{{ event.event_registrations.count }}</td></tr>
+      <tr><th>Max Registrations</th><td>{% if event.max_registration %}{{ event.max_registration }}{% else %}Unlimited{% endif %}</td></tr>
+      <tr><th>Event Type</th><td>{% if event.invite_only %}Invite Only{% else %}Open to Everybody{% endif %}</td></tr>
+      <tr><th>Start Time</th><td>{{ event.start_time|date:"g:i A" }}</td></tr>
+      <tr><th>End Time</th><td>{{ event.end_time|date:"g:i A" }}</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="row" id="event_sessions">
+  <div class="col-md-12">
+    <h3>Session Schedule</h3>
+    <table class="table table-condensed table-striped">
+      <tr>
+        <th width="40%">Name</th>
+        <th width="25%">Speaker</th>
+        <th>Start Time</th>
+        <th>End Time</th>
+        <th>Resources</th>
+      </tr>
+      {% for s in sessions %}
+      <tr>
+        {% if s.placeholder %}
+          <td colspan="2"><strong>{{ s.name }}</strong></td>
+        {% else %}
+          <td><a href="{{ s.get_absolute_url }}">{{ s.name }}</a></td>
+          <td><a href="{% url 'accounts:public_profile' s.user.pk %}">{{ s.speaker_name }}</a></td>
+        {% endif %}
+        <td>{{ s.start_time|date:"g:i A" }}</td>
+        <td>{{ s.end_time|date:"g:i A" }}</td>
+        <td>
+          {% if s.presentation_url %}<a href="{{ s.presentation_url|safe_url }}" class="fa-file-powerpoint-o fa fa-2x" target="_blank"></a>{% endif %}
+          {% if s.video_url %}<a href="{{ s.video_url|safe_url }}" class="fa-file-video-o fa fa-2x" target="_blank"></a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+{% if user.is_authenticated and user_registration and event.has_registration_instructions %}
+<div class="row" id="registration_instructions">
+  <div class="col-md-12">
+    <h3>Registration Instructions</h3>
+    <hr>
+    <div class="panel panel-primary">
+      <div class="panel-heading"><h4><i class="fa fa-info"></i> Registration Instructions</h4></div>
+      <div class="panel-body">{{ event.registration_instructions|markdown_html }}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row" id="event_venue">
+  <div class="col-md-12">
+    <h3>Venue</h3>
+    <hr>
+    {% if event.invite_only %}
+      <div class="alert alert-danger">This is an invite only event. If you are selected you will receive further information via e-mail.</div>
+    {% else %}
+      <p><strong>{{ event.venue.name }}</strong></p>
+      <p>{{ event.venue.address|linebreaksbr }}</p>
+      {% if event.venue.map_url %}<a href="{{ event.venue.map_url }}" target="_blank">View on map</a>{% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

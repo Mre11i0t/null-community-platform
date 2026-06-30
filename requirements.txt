@@ -1,0 +1,62 @@
+Django==5.1.4
+# mysqlclient is the production driver (requires libmysqlclient-dev at
+# build time, see Dockerfile). For local dev without that system lib,
+# PyMySQL is installed below as a pure-Python fallback.
+pymysql==1.1.1
+cryptography==44.0.0
+django-debug-toolbar==4.4.6
+
+# Auth
+django-allauth==65.3.0
+
+# REST API
+djangorestframework==3.15.2
+drf-spectacular==0.28.0
+django-filter==24.3
+
+# Background jobs
+celery==5.4.0
+redis==5.2.1
+django-celery-beat==2.7.0
+django-celery-results==2.5.1
+
+# Admin
+django-import-export==4.3.3
+
+# Storage & Media
+Pillow==11.1.0
+django-storages==1.14.4
+boto3==1.35.90
+
+# Env & Config
+django-environ==0.11.2
+
+# Static files
+whitenoise==6.8.2
+
+# Production server
+gunicorn==23.0.0
+
+# Forms & UI
+django-crispy-forms==2.3
+crispy-bootstrap5==2024.10
+
+# Security
+django-recaptcha==4.0.0
+django-csp==3.8
+django-ratelimit==4.1.0
+
+# Audit
+django-auditlog==3.0.0
+
+# Tagging
+django-taggit==6.1.0
+
+# Voting
+django-vote==2.5.0
+
+# Utils
+Markdown==3.7
+python-slugify==8.0.4
+icalendar==6.1.0
+requests==2.32.3
