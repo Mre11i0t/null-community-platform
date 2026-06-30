@@ -12,9 +12,12 @@
 
   <!-- Bootstrap 3 + Bootswatch Yeti theme + Font Awesome 4 — same stack
        the original app loaded via the Rails asset pipeline (bootstrap-sass,
-       bootswatch-rails, font-awesome-rails); served from CDN here instead. -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.1/yeti/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+       bootswatch-rails, font-awesome-rails). Vendored locally under
+       static/vendor/ rather than pulled from a CDN at runtime, matching
+       the original's bundled-not-fetched approach and avoiding a live
+       external dependency for a self-hosted community platform. -->
+  <link rel="stylesheet" href="{% static 'vendor/css/bootstrap-yeti.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/css/font-awesome.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/custom.css' %}">
   <link rel="stylesheet" href="{% static 'css/home.css' %}">
   {% block extra_css %}{% endblock %}
@@ -44,8 +47,8 @@
 
   {% include "partials/_footer.html" %}
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.1/yeti/bootstrap.min.js"></script>
+  <script src="{% static 'vendor/js/jquery.min.js' %}"></script>
+  <script src="{% static 'vendor/js/bootstrap.min.js' %}"></script>
   <script src="{% static 'js/application.js' %}"></script>
   {% block extra_js %}{% endblock %}
   <script>

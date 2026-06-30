@@ -1,5 +1,7 @@
-"""Quick dev-only seed script — minimal data to exercise the vertical
-slice (home, /upcoming, chapter list/detail, event detail).
+"""Quick dev-only seed script — minimal data to exercise every route in
+the vertical slice (home, /upcoming, chapter list/detail, event detail,
+session detail, public profile, CMS page), including an EventSession
+and EventRegistration so those code paths actually render.
 Run with: python manage.py shell < scripts/seed_dev_data.py
 """
 from datetime import timedelta
@@ -9,7 +11,7 @@ from django.utils import timezone
 from apps.accounts.models import User
 from apps.chapters.models import Chapter, ChapterLead
 from apps.content.models import Page
-from apps.events.models import Event, EventType, Venue
+from apps.events.models import Event, EventRegistration, EventSession, EventType, Venue
 
 speaker, _ = User.objects.get_or_create(
     email="speaker@example.com", defaults={"name": "Jane Speaker", "is_active": True}
@@ -60,6 +62,32 @@ event, _ = Event.objects.get_or_create(
     },
 )
 
+attendee, _ = User.objects.get_or_create(
+    email="attendee@example.com", defaults={"name": "Alex Attendee", "is_active": True}
+)
+attendee.set_password("password")
+attendee.save()
+
+session, _ = EventSession.objects.get_or_create(
+    event=event,
+    user=speaker,
+    name="Intro to Web Security",
+    defaults={
+        "description": "A beginner-friendly walkthrough of the OWASP Top 10.",
+        "session_type": "Talk",
+        "start_time": event.start_time,
+        "end_time": event.start_time + timedelta(hours=1),
+        "presentation_url": "https://slideshare.net/example/intro-websec",
+        "video_url": "https://youtube.com/watch?v=example",
+    },
+)
+
+EventRegistration.objects.get_or_create(
+    event=event,
+    user=attendee,
+    defaults={"state": EventRegistration.STATE_CONFIRMED, "accepted": True},
+)
+
 page, _ = Page.objects.get_or_create(
     name="how-to-start-a-chapter",
     defaults={
@@ -72,4 +100,7 @@ page, _ = Page.objects.get_or_create(
     },
 )
 
-print(f"Seeded: chapter={chapter.pk} event={event.pk} page={page.slug}")
+print(
+    f"Seeded: chapter={chapter.pk} event={event.pk} session={session.pk} "
+    f"speaker={speaker.pk} attendee={attendee.pk} page={page.slug}"
+)

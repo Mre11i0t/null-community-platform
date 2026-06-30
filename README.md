@@ -16,7 +16,7 @@ Awesome — assets copied verbatim from the original app's
 This is an early-stage rewrite, not a finished replacement. Read this
 section before assuming a feature works.
 
-### Working end-to-end (booted, migrated, manually verified against seeded data)
+### Working end-to-end (booted, migrated, manually verified against seeded data — every route below was actually requested with a chapter/event/session/registration in the DB and returned a 200 with real content, not just exercised at the route level)
 
 - Django project skeleton, settings split (`config/settings/{base,dev,prod}.py`)
 - Full data model for: users, chapters, chapter leads, venues, event
@@ -40,6 +40,13 @@ section before assuming a feature works.
   - `/events/sessions/<id>/` session detail (abstract, speaker, resources)
   - `/profile/<id>/` public user profile (sessions delivered/attended)
   - `/pages/<slug>/` dynamic CMS pages
+- Visual parity with the original Bootstrap 3 + Bootswatch Yeti + Font
+  Awesome 4 theme, screenshot-checked in Chrome: navbar, jumbotron,
+  panels, chapter cards, and event tables all render with the correct
+  styling and icon glyphs. These assets are vendored locally under
+  `static/vendor/` rather than pulled from a CDN at runtime — initial
+  CDN links resolved to dead/incorrect paths (404/503) and were
+  replaced with verified, locally-hosted copies for reliability.
 
 ### Explicitly NOT done — scaffolded or stubbed, do not assume these work
 
@@ -91,7 +98,7 @@ python manage.py shell < scripts/seed_dev_data.py   # optional dev seed data
 python manage.py runserver
 ```
 
-Visit `http://127.0.0.1:8000/`. Admin at `/admin/`.
+Visit `http://127.0.0.1:8000/` (or whatever port you pass to `runserver`). Admin at `/admin/`.
 
 ### Why PyMySQL instead of mysqlclient for local dev
 
@@ -119,7 +126,9 @@ apps/
 config/
   settings/      base.py, dev.py, prod.py
 templates/        ported from app/views/*.erb
-static/           copied verbatim from app/assets/ (CSS/JS/images)
+static/           css/, js/, images/ copied verbatim from app/assets/;
+                  vendor/ holds locally-hosted Bootstrap 3 + Bootswatch
+                  Yeti + Font Awesome 4 (not CDN-loaded, see above)
 ```
 
 Every model file has a docstring pointing back to the original Rails
