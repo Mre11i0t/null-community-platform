@@ -103,7 +103,10 @@ has not been exercised.
   key) — not faked.
 - **Chapter map** (homepage + chapter directory): the original used a
   live Google Maps pin map via Geocoder. Left out rather than faked —
-  needs a Maps API key and geocoding integration.
+  needs a Maps API key and geocoding integration. Its two supporting
+  JSON endpoints (`chapters#leaders`, `chapters#upcoming_events`)
+  aren't ported either for the same reason; the same data is already
+  available server-rendered on the chapter detail page.
 - **Swagger UI** (`/api-v2/schema/swagger/`) renders blank in this
   sandbox's browser automation tool because `swagger-ui-dist`'s CDN
   (jsdelivr) 503s through that specific network path; the underlying
