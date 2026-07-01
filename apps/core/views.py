@@ -1,9 +1,12 @@
 from django.core.paginator import Paginator
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.chapters.models import Chapter
-from apps.events.models import Event
+from apps.events.models import Event, EventType
+
+from .stats import Stat
 
 
 def home(request):
@@ -55,3 +58,49 @@ def calendar(request):
 def forum(request):
     """Mirrors HomeController#forum — embedded Google Groups forum."""
     return render(request, "home/forum.html")
+
+
+def stats_index(request):
+    """Mirrors StatsController#index — redirects to last year's stats."""
+    return redirect(reverse("core:stats_show", args=[timezone.now().year - 1]))
+
+
+def stats_show(request, year):
+    """Mirrors StatsController#show + the `_data_view` partial (event
+    counts by type, participation, unique speakers, speaker leaderboard).
+
+    The original also had a `_graph_view` tab (timeline + pie chart via
+    `google.load("visualization", ...)`), which depends on Google's
+    "Google JSAPI" loader — a service Google shut down years ago, so
+    that tab has been broken in the original app itself for a long
+    time. Not ported for that reason, not out of scope-cutting.
+    """
+    chapter = None
+    chapter_id = request.GET.get("chapter_id")
+    if chapter_id and chapter_id != "ALL":
+        chapter = get_object_or_404(Chapter, pk=chapter_id)
+
+    stat = Stat(year, chapter)
+    events = stat.events()
+    event_sessions = stat.event_sessions()
+    event_type_rows = [
+        {
+            "event_type": event_type,
+            "event_count": events.filter(event_type=event_type).count(),
+            "session_count": event_sessions.filter(event__event_type=event_type).count(),
+        }
+        for event_type in EventType.objects.order_by("name")
+    ]
+    return render(
+        request,
+        "stats/show.html",
+        {
+            "stat": stat,
+            "year": year,
+            "chapter": chapter,
+            "chapters": Chapter.objects.order_by("name"),
+            "event_type_rows": event_type_rows,
+            "top_speakers": stat.top_speakers(100000),
+            "years": range(timezone.now().year, 2009, -1),
+        },
+    )

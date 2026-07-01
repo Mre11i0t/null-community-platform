@@ -12,4 +12,6 @@ urlpatterns = [
     path("privacy", views.privacy, name="privacy"),
     path("calendar", views.calendar, name="calendar"),
     path("forum", views.forum, name="forum"),
+    path("stats", views.stats_index, name="stats_index"),
+    path("stats/<int:year>", views.stats_show, name="stats_show"),
 ]

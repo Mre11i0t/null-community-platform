@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block page_title %}null Community Event Statistics for Year {{ year }}{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h2>
+        Statistics For {{ year }} <small>{% if chapter %}{{ chapter.name }}{% endif %}</small>
+        <div class="pull-right">
+          <form class="form-horizontal form-inline pull-right" id="stat_filter_form">
+            <div class="form-group">
+              <select id="stat_chapter" class="form-control">
+                <option value="ALL" {% if not chapter %}selected{% endif %}>ALL</option>
+                {% for c in chapters %}
+                  <option value="{{ c.pk }}" {% if chapter.pk == c.pk %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+              </select>
+              <select id="stat_year" class="form-control">
+                {% for y in years %}
+                  <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-primary">Filter</button>
+            </div>
+          </form>
+        </div>
+      </h2>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <table class="table table-bordered">
+      <tr>
+        <td width="60%"><h2>Events</h2></td>
+        <td><h3>{{ stat.events.count }}</h3></td>
+      </tr>
+      {% for row in event_type_rows %}
+      <tr>
+        <td><h4>{{ row.event_type.name }}</h4></td>
+        <td><h4>{{ row.event_count }} (Sessions: {{ row.session_count }})</h4></td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td><h3>Participation</h3></td>
+        <td><h3>{{ stat.event_registrations.count }}</h3></td>
+      </tr>
+      <tr>
+        <td><h3>Unique Speakers</h3></td>
+        <td><h3>{{ stat.speakers.count }}</h3></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <h3>Top Speakers</h3>
+    <table class="table table-condensed">
+      <tr>
+        <th width="60%">Name</th>
+        <th>Sessions Count</th>
+      </tr>
+      {% for user, count in top_speakers %}
+      <tr>
+        <td><a href="{% url 'accounts:public_profile' user.pk %}">{{ user.name }}</a></td>
+        <td>{{ count }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  document.getElementById("stat_filter_form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var year = document.getElementById("stat_year").value;
+    var chapterId = document.getElementById("stat_chapter").value;
+    var url = "/stats/" + year;
+    if (chapterId !== "ALL") {
+      url += "?chapter_id=" + chapterId;
+    }
+    window.location = url;
+  });
+</script>
+{% endblock %}

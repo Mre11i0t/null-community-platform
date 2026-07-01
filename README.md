@@ -56,10 +56,11 @@ has not been exercised.
   events, event sessions, event registrations, password auth,
   users/me, users/events, users/sessions.
 - **Notifications** (`apps/notifications`): custom leader email blasts
-  (`EventMailerTask`, filtered by registration state) and all six
+  (`EventMailerTask`, filtered by registration state) and all seven
   automatic-notification modes (Announcement, Speaker Notification,
-  Event/Speaker Reminders, Admin-on-create, Presentation-update
-  reminder), ported from `event_mailer_task.rb` and
+  Event Reminder, Event Reminder Final/RSVP reminder, Speaker Reminder,
+  Admin-on-create, Presentation-update reminder), ported from
+  `event_mailer_task.rb` and
   `event_automatic_notification_task.rb` onto real Celery tasks. A
   periodic sweep (`dispatch_event_notifications`, registered in
   `CELERY_BEAT_SCHEDULE`) replaces the original's Resque Scheduler
@@ -75,6 +76,15 @@ has not been exercised.
   (`/calendar`, `/forum`) — these were found missing during a full
   `config/routes.rb` diff against this app's URLs and added since they
   need no external credentials.
+- **Yearly community stats** (`/stats`, `/stats/<year>`, optional
+  `?chapter_id=`): event counts by type, participation, unique
+  speakers, and a speaker leaderboard, ported from
+  `app/models/stat.rb` + `StatsController` (`apps/core/stats.py`).
+  The original's second "Graph" tab (timeline + pie chart) isn't
+  ported — it depended on Google's "Google JSAPI" loader
+  (`google.load("visualization", ...)`), a service Google shut down
+  years ago, so that tab has been broken in the original app itself
+  for a long time regardless of this port.
 
 ### Explicitly NOT done or only partially done
 
