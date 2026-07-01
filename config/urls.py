@@ -9,6 +9,7 @@ urlpatterns = [
     path("api-v2/schema/", include("apps.api.urls")),
     path("chapters/", include("apps.chapters.urls")),
     path("events/", include("apps.events.urls")),
+    path("leads/", include("apps.leads.urls")),
     path("", include("apps.accounts.urls")),
     path("", include("apps.content.urls")),
     path("", include("apps.proposals.urls")),

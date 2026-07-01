@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block page_title %}{{ session.name }} - Session Management{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h2>
+        {{ session.name }}
+        <span class="pull-right">
+          <a href="{% url 'leads:session_index' event.pk %}" class="btn btn-default">Session List</a>
+          <a href="{% url 'leads:session_edit' event.pk session.pk %}" class="btn btn-default">Edit Session</a>
+        </span>
+      </h2>
+    </div>
+    <p><strong>Speaker:</strong> <a href="{% url 'accounts:public_profile' session.user.pk %}">{{ session.user.name }}</a></p>
+    <p><strong>Start:</strong> {{ session.start_time|date:"l F d Y, g:i A" }}</p>
+    {{ session.description|markdown_html }}
+  </div>
+</div>
+{% endblock %}

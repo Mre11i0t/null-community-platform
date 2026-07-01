@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block page_title %}Edit Chapter - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h2>Edit {{ chapter.name }} Chapter</h2></div>
+    {% if form.errors %}
+    <div class="alert alert-danger alert-block">
+      <button type="button" class="close" data-dismiss="alert">x</button>
+      <ul>{% for field in form %}{% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}{% endfor %}</ul>
+    </div>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data" action="{% url 'leads:chapter_edit' chapter.pk %}">
+      {% csrf_token %}
+      <div class="form-group"><label>Chapter Email</label>{{ form.chapter_email }}</div>
+      <div class="form-group"><label>Description</label>{{ form.description }}<p class="help-block">Markdown supported.</p></div>
+      <div class="form-group"><label>City</label>{{ form.city }}</div>
+      <div class="form-group"><label>State</label>{{ form.state }}</div>
+      <div class="form-group"><label>Country</label>{{ form.country }}</div>
+      <div class="form-group">{{ form.image }}</div>
+      <div class="form-group"><label>Twitter</label>{{ form.twitter_handle }}</div>
+      <div class="form-group"><label>Facebook</label>{{ form.facebook_profile }}</div>
+      <div class="form-group"><label>GitHub</label>{{ form.github_profile }}</div>
+      <div class="form-group"><label>LinkedIn</label>{{ form.linkedin_profile }}</div>
+      <div class="form-group"><label>SlideShare</label>{{ form.slideshare_profile }}</div>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

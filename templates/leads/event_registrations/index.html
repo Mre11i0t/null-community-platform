@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block page_title %}Event Registrations - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h2>Registrations <small>{{ event.descriptive_name }}</small></h2>
+      <h4>
+        <span class="pull-right">
+          <a href="{% url 'leads:event_show' event.pk %}" class="btn btn-sm btn-primary">Back to Event</a>
+          <button type="button" id="registration_update_btn" class="btn btn-sm btn-danger">Update Registration State</button>
+          <a href="{% url 'leads:registration_export_csv' event.pk %}" class="btn btn-sm btn-primary">Export Report</a>
+        </span>
+      </h4>
+    </div>
+  </div>
+</div>
+<div class="table-responsive">
+  <table class="table table-condensed">
+    <tr><th width="5%">#</th><th width="30%">Name</th><th width="30%">Email</th><th width="20%">Registered On</th><th>State</th></tr>
+    {% for reg in registrations %}
+    <tr>
+      <td>{{ reg.pk }}</td>
+      <td><a href="{% url 'accounts:public_profile' reg.user.pk %}">{{ reg.user.name }}</a></td>
+      <td>{{ reg.user.email }}</td>
+      <td>{{ reg.created_at|date:"Y-m-d g:i A" }}</td>
+      <td>
+        <select class="event_registration_select form-control" data-registration-id="{{ reg.pk }}">
+          {% for value, label in states %}
+          <option value="{{ value }}" {% if value == reg.state %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  document.getElementById('registration_update_btn').addEventListener('click', function () {
+    var updates = [];
+    document.querySelectorAll('.event_registration_select').forEach(function (select) {
+      updates.push({ id: select.getAttribute('data-registration-id'), state: select.value });
+    });
+    fetch('{% url "leads:registration_mass_update" event.pk %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ event_registrations: updates })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (result) {
+        alert(result.status === 'OK' ? 'Successfully updated records.' : 'Failed to update records.');
+      })
+      .catch(function () { alert('Failed to update records.'); });
+  });
+</script>
+{% endblock %}

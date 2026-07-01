@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block page_title %}{% if is_edit %}Edit{% else %}Create{% endif %} Event - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h2>{% if is_edit %}Edit Event{% else %}Create Event{% endif %}</h2></div>
+    {% if form.errors %}
+    <div class="alert alert-danger alert-block">
+      <button type="button" class="close" data-dismiss="alert">x</button>
+      <ul>{% for field in form %}{% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}{% endfor %}</ul>
+    </div>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data" action="{% if is_edit %}{% url 'leads:event_edit' event.pk %}{% else %}{% url 'leads:event_new' %}{% endif %}">
+      {% csrf_token %}
+      <h4>Basic Information</h4>
+      <div class="form-group"><label>Event Type</label>{{ form.event_type }}</div>
+      <div class="form-group"><label>Chapter</label>{{ form.chapter }}</div>
+      <div class="form-group"><label>Name</label>{{ form.name }}<p class="help-block">Use a short name such as "Monthly Meet". The full title is auto-generated from name, chapter, month, year.</p></div>
+      <div class="form-group"><label>Venue</label>{{ form.venue }}</div>
+      <div class="form-group"><label>Description</label>{{ form.description }}</div>
+      <div class="checkbox"><label>{{ form.can_show_on_homepage }} Show on homepage</label></div>
+      <div class="checkbox"><label>{{ form.can_show_on_archive }} Show on archive</label></div>
+      <div class="checkbox"><label>{{ form.accepting_registration }} Accepting registration</label></div>
+
+      <h4 style="margin-top:1.5em;">Schedule</h4>
+      <div class="form-group"><label>Start Time</label>{{ form.start_time }}</div>
+      <div class="form-group"><label>End Time</label>{{ form.end_time }}</div>
+
+      <h4 style="margin-top:1.5em;">Registration</h4>
+      <div class="form-group"><label>Registration Start Time</label>{{ form.registration_start_time }}</div>
+      <div class="form-group"><label>Registration End Time</label>{{ form.registration_end_time }}</div>
+      <div class="form-group"><label>Registration Instructions</label>{{ form.registration_instructions }}</div>
+      <div class="form-group"><label>Max Registration</label>{{ form.max_registration }}<p class="help-block">0 for unlimited.</p></div>
+
+      <h4 style="margin-top:1.5em;">Notification Settings</h4>
+      <div class="checkbox"><label>{{ form.ready_for_announcement }} Ready for announcement</label></div>
+      <div class="checkbox"><label>{{ form.ready_for_notifications }} Ready for notifications</label></div>
+      <div class="checkbox"><label>{{ form.ready_for_reminders }} Ready for reminders</label></div>
+
+      <h4 style="margin-top:1.5em;">Media</h4>
+      <div class="form-group">{{ form.image }}<p class="help-block">Image will be rendered as part of the page open graph image. File is stored as-is; ensure EXIF data doesn't expose sensitive information.</p></div>
+
+      <button type="submit" class="btn btn-primary" style="margin-top:1em;">Save</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

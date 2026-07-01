@@ -71,8 +71,9 @@
             <li><a href="#"><i class="fa fa-bullseye"></i> My Sessions <small>(coming soon)</small></a></li>
             <li><a href="{% url 'proposals:proposal_index' %}?user_id={{ user.pk }}"><i class="fa fa-bullhorn"></i> My Proposals</a></li>
             {% if user.managed_chapters.all|length %}
-              <li><a href="#"><i class="fa fa-wrench"></i> Event Management <small>(coming soon)</small></a></li>
-              <li><a href="#"><i class="fa fa-paw"></i> Chapter Management <small>(coming soon)</small></a></li>
+              <li><a href="{% url 'leads:event_index' %}"><i class="fa fa-wrench"></i> Event Management</a></li>
+              <li><a href="{% url 'leads:chapter_index' %}"><i class="fa fa-paw"></i> Chapter Management</a></li>
+              <li><a href="{% url 'leads:venue_index' %}"><i class="fa fa-wrench"></i> Venue Management</a></li>
             {% endif %}
             <li class="divider"></li>
             <li>

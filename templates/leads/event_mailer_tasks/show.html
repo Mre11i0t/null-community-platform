@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block page_title %}{{ task.subject }} - Mailer Task{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h2>{{ task.subject }}</h2></div>
+    <p><strong>Registration State:</strong> {{ task.registration_state|default:"All" }}</p>
+    <p><strong>Ready for Delivery:</strong> {{ task.ready_for_delivery }}</p>
+    <p><strong>Executed:</strong> {{ task.executed }}</p>
+    <blockquote>{{ task.body|linebreaksbr }}</blockquote>
+  </div>
+</div>
+{% endblock %}

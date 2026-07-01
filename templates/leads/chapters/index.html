@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block page_title %}Chapter Management - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h2>Managed Chapters</h2></div>
+  </div>
+</div>
+<div class="table-responsive">
+  <table class="table table-condensed">
+    <tr><th width="5%">#</th><th width="15%">State</th><th width="55%">Name</th><th></th></tr>
+    {% if not chapters %}
+    <tr><td colspan="4"><div class="alert alert-danger">No chapter found.</div></td></tr>
+    {% else %}
+    {% for chapter in chapters %}
+    <tr>
+      <td><a href="{% url 'chapters:detail' chapter.pk %}">#{{ chapter.pk }}</a></td>
+      <td>{{ chapter.state }}</td>
+      <td><a href="{% url 'chapters:detail' chapter.pk %}">{{ chapter.name|truncatechars:60 }}</a></td>
+      <td><a href="{% url 'leads:chapter_edit' chapter.pk %}" style="text-decoration:none;"><i class="fa fa-edit"></i> Edit Chapter</a></td>
+    </tr>
+    {% endfor %}
+    {% endif %}
+  </table>
+</div>
+{% endblock %}

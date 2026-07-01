@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block page_title %}Event Mailer Management - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h2>Event Mailer Tasks <small>{{ event.descriptive_name }}</small>
+        <span class="pull-right"><a href="{% url 'leads:mailer_task_new' event.pk %}" class="btn btn-primary">Create Mailer Task</a></span>
+      </h2>
+    </div>
+  </div>
+</div>
+<div class="table-responsive" style="min-height:200px;">
+  <table class="table table-condensed">
+    <tr><th width="5%">#</th><th width="45%">Subject</th><th width="15%">Registration State</th><th width="15%">Ready for Delivery?</th><th width="10%">Executed?</th><th></th></tr>
+    {% if not tasks %}
+    <tr><td colspan="6"><div class="alert alert-danger">No event mailer tasks found. Why don't you create one?</div></td></tr>
+    {% else %}
+    {% for task in tasks %}
+    <tr>
+      <td>{{ task.pk }}</td>
+      <td><a href="{% url 'leads:mailer_task_show' event.pk task.pk %}">{{ task.subject|default:""|truncatechars:50 }}</a></td>
+      <td>{{ task.registration_state }}</td>
+      <td>{{ task.ready_for_delivery }}</td>
+      <td>{{ task.executed }}</td>
+      <td>
+        {% if not task.executed %}
+        <form method="post" action="{% url 'leads:mailer_task_execute' event.pk task.pk %}" style="display:inline;" onsubmit="return confirm('Are you sure you want to execute mailer task?');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-link btn-xs"><i class="fa fa-plane"></i> Execute</button>
+        </form>
+        <a href="{% url 'leads:mailer_task_edit' event.pk task.pk %}" style="text-decoration:none;"><i class="fa fa-edit"></i> Edit</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    {% endif %}
+  </table>
+</div>
+{% endblock %}

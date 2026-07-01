@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block page_title %}{{ venue.name }} - Venue Management{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h2>{{ venue.name }} <span class="pull-right"><a href="{% url 'leads:venue_edit' venue.pk %}" class="btn btn-default">Edit Venue</a></span></h2>
+    </div>
+    <p><strong>Chapter:</strong> {{ venue.chapter.name }}</p>
+    <p><strong>Address:</strong> {{ venue.address|linebreaksbr }}</p>
+    <p><strong>Contact:</strong> {{ venue.contact_name }} — {{ venue.contact_email }}</p>
+  </div>
+</div>
+{% endblock %}

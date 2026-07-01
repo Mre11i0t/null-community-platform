@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block page_title %}Venue Management - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h2>Managed Venues <span class="pull-right"><a href="{% url 'leads:venue_new' %}" class="btn btn-primary">Create Venue</a></span></h2>
+    </div>
+  </div>
+</div>
+<div class="table-responsive">
+  <table class="table table-condensed">
+    <tr><th width="5%">#</th><th width="15%">Chapter</th><th width="55%">Name</th><th></th></tr>
+    {% if not venues %}
+    <tr><td colspan="4"><div class="alert alert-danger">No venues found. Why don't you create one?</div></td></tr>
+    {% else %}
+    {% for venue in venues %}
+    <tr>
+      <td>#{{ venue.pk }}</td>
+      <td>{{ venue.chapter.name }}</td>
+      <td><a href="{% url 'leads:venue_show' venue.pk %}">{{ venue.name|truncatechars:60 }}</a></td>
+      <td><a href="{% url 'leads:venue_edit' venue.pk %}" style="text-decoration:none;"><i class="fa fa-edit"></i> Edit Venue</a></td>
+    </tr>
+    {% endfor %}
+    {% endif %}
+  </table>
+</div>
+{% endblock %}

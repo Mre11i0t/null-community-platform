@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block page_title %}{% if is_edit %}Edit{% else %}Create{% endif %} Session - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h2>{% if is_edit %}Edit Session{% else %}Create Session{% endif %} <small>{{ event.descriptive_name }}</small></h2></div>
+    {% if form.errors %}
+    <div class="alert alert-danger alert-block">
+      <button type="button" class="close" data-dismiss="alert">x</button>
+      <ul>{% for field in form %}{% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}{% endfor %}</ul>
+    </div>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data" action="{% if is_edit %}{% url 'leads:session_edit' event.pk session.pk %}{% else %}{% url 'leads:session_new' event.pk %}{% endif %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Speaker (User)<abbr title="required">*</abbr></label>
+        <input type="text" id="ajax_user_input" class="form-control" placeholder="Search by name or email"
+               value="{% if session %}{{ session.user.name }} <{{ session.user.email }}>{% endif %}">
+        <p class="help-block">Autocomplete enabled for this field.</p>
+        {{ form.user }}
+      </div>
+      <div class="form-group"><label>Name</label>{{ form.name }}</div>
+      <div class="form-group"><label>Description</label>{{ form.description }}</div>
+      <div class="form-group"><label>Start Time</label>{{ form.start_time }}</div>
+      <div class="form-group"><label>End Time</label>{{ form.end_time }}</div>
+      <div class="checkbox"><label>{{ form.need_projector }} Needs projector</label></div>
+      <div class="checkbox"><label>{{ form.need_microphone }} Needs microphone</label></div>
+      <div class="checkbox"><label>{{ form.need_whiteboard }} Needs whiteboard</label></div>
+      <div class="form-group"><label>Presentation URL</label>{{ form.presentation_url }}</div>
+      <div class="form-group"><label>Video URL</label>{{ form.video_url }}</div>
+      <div class="checkbox"><label>{{ form.placeholder }} Placeholder (for misc. sessions like break, introduction, etc.)</label></div>
+      <div class="form-group">{{ form.image }}</div>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  (function () {
+    var input = document.getElementById('ajax_user_input');
+    var hidden = document.getElementById('id_user');
+    var suggestUrl = '{% url "leads:session_suggest_user" event.pk %}';
+    var box = null;
+
+    function closeBox() {
+      if (box) { box.remove(); box = null; }
+    }
+
+    input.addEventListener('input', function () {
+      var q = input.value;
+      if (q.length < 2) { closeBox(); return; }
+      fetch(suggestUrl + '?q=' + encodeURIComponent(q))
+        .then(function (r) { return r.json(); })
+        .then(function (users) {
+          closeBox();
+          box = document.createElement('div');
+          box.className = 'list-group';
+          box.style.position = 'absolute';
+          box.style.zIndex = 1000;
+          users.forEach(function (u) {
+            var item = document.createElement('a');
+            item.href = '#';
+            item.className = 'list-group-item';
+            item.textContent = u.name + ' <' + u.email + '>';
+            item.addEventListener('click', function (e) {
+              e.preventDefault();
+              input.value = item.textContent;
+              hidden.value = u.id;
+              closeBox();
+            });
+            box.appendChild(item);
+          });
+          input.parentNode.appendChild(box);
+        });
+    });
+  })();
+</script>
+{% endblock %}

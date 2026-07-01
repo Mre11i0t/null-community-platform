@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.content",
     "apps.proposals",
     "apps.notifications",
+    "apps.leads",
     "apps.api",
 ]
 

@@ -98,6 +98,35 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     def managed_chapter(self, chapter):
         return self.chapter_leads.filter(chapter=chapter, active=True).exists()
 
+    def managed_venues(self):
+        from apps.events.models import Venue
+
+        return Venue.objects.filter(chapter__in=self.managed_chapters())
+
+    def managed_venue(self, venue):
+        return venue is not None and venue.chapter_id in self.managed_chapters().values_list("id", flat=True)
+
+    def managed_events(self):
+        from django.utils import timezone
+
+        from apps.events.models import Event
+
+        return Event.objects.filter(chapter__in=self.managed_chapters(), end_time__gt=timezone.now())
+
+    def managed_old_events(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.events.models import Event
+
+        now = timezone.now()
+        return Event.objects.filter(
+            chapter__in=self.managed_chapters(),
+            end_time__lt=now - timedelta(hours=8),
+            start_time__gt=now - timedelta(days=30),
+        )
+
     def speaker_sessions(self):
         return self.event_sessions.filter(placeholder=False).order_by("-created_at")
 

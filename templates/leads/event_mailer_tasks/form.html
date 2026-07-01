@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block page_title %}{% if is_edit %}Edit{% else %}Create{% endif %} Mailer Task - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h2>{% if is_edit %}Edit{% else %}Create{% endif %} Mailer Task</h2></div>
+    {% if form.errors %}
+    <div class="alert alert-danger alert-block">
+      <button type="button" class="close" data-dismiss="alert">x</button>
+      <ul>{% for field in form %}{% for error in field.errors %}<li>{{ field.label }}: {{ error }}</li>{% endfor %}{% endfor %}</ul>
+    </div>
+    {% endif %}
+    <form method="post" action="{% if is_edit %}{% url 'leads:mailer_task_edit' event.pk task.pk %}{% else %}{% url 'leads:mailer_task_new' event.pk %}{% endif %}">
+      {% csrf_token %}
+      <div class="form-group"><label>Subject</label>{{ form.subject }}</div>
+      <div class="form-group"><label>Body</label>{{ form.body }}<p class="help-block">Markdown is supported.</p></div>
+      <div class="form-group"><label>Registration State</label>{{ form.registration_state }}<p class="help-block">Keep this blank to send to all registered users.</p></div>
+      <div class="checkbox"><label>{{ form.ready_for_delivery }} Ready for delivery</label></div>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
