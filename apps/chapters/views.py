@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 
 from .models import Chapter
@@ -20,4 +21,15 @@ def detail(request, pk):
             "upcoming_events": chapter.upcoming_events().order_by("start_time"),
             "past_events": chapter.past_events().order_by("-start_time"),
         },
+    )
+
+
+def calendar_ics(request, pk):
+    """Mirrors ChaptersController#calendar — an iCal feed of upcoming
+    public events for this chapter (subscribable in Google/Apple Calendar)."""
+    chapter = get_object_or_404(Chapter, pk=pk)
+    return HttpResponse(
+        chapter.upcoming_events_ics(),
+        content_type="text/calendar",
+        headers={"Content-Disposition": 'inline; filename="calendar.ics"'},
     )

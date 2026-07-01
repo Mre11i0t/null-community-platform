@@ -66,6 +66,15 @@ has not been exercised.
   one-shot jobs, advancing each public event's `notification_state`
   as its time windows are reached — see the caveat below, this isn't
   actually running automatically in dev.
+- **iCal export**: a per-chapter subscribable feed
+  (`/chapters/<id>/calendar.ics`, `Chapter#upcoming_events_ics` +
+  `Event#to_ics_event`, ported from the `icalendar` gem usage in the
+  original), a public venue detail page (`/venues/<id>/`), a "My
+  Sessions" page for speakers (`/events/sessions/my_sessions/`), and
+  the embedded public Google Calendar / Google Groups forum pages
+  (`/calendar`, `/forum`) — these were found missing during a full
+  `config/routes.rb` diff against this app's URLs and added since they
+  need no external credentials.
 
 ### Explicitly NOT done or only partially done
 
@@ -95,6 +104,31 @@ has not been exercised.
   `mysqlclient`, `DEBUG=False`, `collectstatic`, SMTP email, real
   reCAPTCHA keys, S3/whatever static storage) has not been booted or
   tested this session — only `dev.py` has.
+- **Social login (`/auth/:provider/callback`)**: `django-allauth`'s
+  social-account app is not configured with any OAuth client
+  credentials — the `UserAuthProfile` model (schema equivalent) exists
+  but no provider is wired up.
+- **Slack integration** (`/api/slackbot/events`) and the old pre-Grape
+  `/api/*` endpoints (`authenticate`, `check_authentication`,
+  `user_registrations`, `user_autocomplete`): not ported. The `/api/*`
+  ones are superseded in spirit by `/api-v2/*` (password auth, per-user
+  events/sessions); `user_autocomplete`'s job (speaker search when
+  leads create sessions) is covered client-side in
+  `templates/leads/event_sessions/form.html`. Slack needs a bot token
+  this environment doesn't have. `/api/register` in the original
+  routes has no controller action at all — a dead route even there.
+- **Session library / search page** (`/event_sessions` — browse and
+  full-text-search all past sessions site-wide, distinct from the
+  per-user "My Sessions" page above): not built. Still linked as
+  "(coming soon)" in the nav.
+- **Per-page edit permissions**: the original let non-admin users with
+  a `PageAccessPermission` row edit specific CMS pages in place
+  (`/pages/:id/edit`). Django admin can edit `Page` rows for staff
+  users, which covers the admin case but not that narrower
+  per-page-per-user grant — not ported.
+- **`/event/:name` SEO-friendly event URL** (slug-based alias for
+  `/events/:id`): not ported: low-value, `/events/<id>/` covers the
+  same page.
 
 A from-scratch database was created and `migrate`d against with no
 manual intervention (`makemigrations --check --dry-run` → "No changes

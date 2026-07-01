@@ -1,9 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from .forms import EventRegistrationForm, EventSessionCommentForm
-from .models import Event, EventRegistration, EventSession, EventSessionComment, SessionVote
+from .models import Event, EventRegistration, EventSession, EventSessionComment, SessionVote, Venue
 
 
 def detail(request, pk):
@@ -168,6 +169,19 @@ def registration_destroy(request, event_id, pk):
         registration.delete()
         messages.success(request, "You have successfully unregistered with the event.")
     return redirect("events:detail", pk=event.pk)
+
+
+def venue_detail(request, pk):
+    """Mirrors VenuesController#show / the `_venue` partial (address + map embed)."""
+    venue = get_object_or_404(Venue, pk=pk)
+    return render(request, "events/venue_detail.html", {"venue": venue})
+
+
+@login_required
+def my_sessions(request):
+    """Mirrors EventSessionsController#my_sessions."""
+    sessions = request.user.speaker_sessions().select_related("event", "event__chapter")
+    return render(request, "events/my_sessions.html", {"sessions": sessions, "now": timezone.now()})
 
 
 def registration_index(request, event_id):

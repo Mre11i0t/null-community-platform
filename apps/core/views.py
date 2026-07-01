@@ -44,3 +44,14 @@ def about(request):
 
 def privacy(request):
     return render(request, "home/privacy.html")
+
+
+def calendar(request):
+    """Mirrors HomeController#calendar — an embedded read-only public
+    Google Calendar (not an ICS feed; see Chapter#calendar_ics for that)."""
+    return render(request, "home/calendar.html")
+
+
+def forum(request):
+    """Mirrors HomeController#forum — embedded Google Groups forum."""
+    return render(request, "home/forum.html")

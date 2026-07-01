@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block page_title %}My Sessions - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h2>
+        My Sessions
+        <small>Where I am speaking</small>
+        <span class="pull-right">
+          <a href="{% url 'core:home' %}" class="btn btn-primary">Back to Home</a>
+        </span>
+      </h2>
+    </div>
+  </div>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-condensed">
+    <tr>
+      <th width="5%">#</th>
+      <th width="25%">Name</th>
+      <th width="10%">Chapter</th>
+      <th width="25%">Event</th>
+      <th width="35%">Schedule</th>
+    </tr>
+    {% for session in sessions %}
+    <tr>
+      <td><a href="{% url 'events:session_detail' session.pk %}">#{{ session.pk }}</a></td>
+      <td><a href="{% url 'events:session_detail' session.pk %}">{{ session.name|truncatechars:30 }}</a></td>
+      <td><a href="{% url 'chapters:detail' session.event.chapter.pk %}">{{ session.event.chapter.name }}</a></td>
+      <td><a href="{% url 'events:detail' session.event.pk %}">{{ session.event.name }}</a></td>
+      <td>
+        {{ session.start_time }}
+        {% if session.start_time > now %}
+          <span class="label label-success">Upcoming</span>
+        {% else %}
+          <span class="label label-danger">Done</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">You have not spoken at any sessions yet.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

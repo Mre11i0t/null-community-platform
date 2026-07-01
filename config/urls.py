@@ -3,6 +3,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.events import views as event_views
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
@@ -10,6 +12,8 @@ urlpatterns = [
     path("chapters/", include("apps.chapters.urls")),
     path("events/", include("apps.events.urls")),
     path("leads/", include("apps.leads.urls")),
+    # Top-level to match the original's flat /venues/:id route (VenuesController#show).
+    path("venues/<int:pk>/", event_views.venue_detail, name="venue_detail"),
     path("", include("apps.accounts.urls")),
     path("", include("apps.content.urls")),
     path("", include("apps.proposals.urls")),

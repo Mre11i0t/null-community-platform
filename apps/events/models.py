@@ -177,6 +177,26 @@ class Event(TimeStampedModel):
     def image_url(self):
         return self.image.url if self.image else "/static/images/default_image.png"
 
+    def to_ics_event(self):
+        """Ports Event#to_ics_event — used by Chapter#upcoming_events_ics."""
+        from icalendar import Event as ICalEvent
+        from icalendar import vCalAddress, vText
+
+        ics_event = ICalEvent()
+        ics_event.add("dtstart", self.start_time)
+        ics_event.add("dtend", self.end_time)
+        ics_event.add("summary", self.descriptive_name())
+        ics_event.add("description", self.description)
+        ics_event.add("location", self.venue.map_url or self.venue.address)
+        ics_event.add("created", self.created_at)
+        ics_event.add("last-modified", self.updated_at)
+        ics_event["uid"] = f"swachalit-event-{self.pk}"
+        ics_event.add("url", self.get_absolute_url())
+        organizer = vCalAddress("MAILTO:no-reply@null.community")
+        organizer.params["cn"] = vText("null Open Security Community")
+        ics_event["organizer"] = organizer
+        return ics_event
+
 
 class EventSession(TimeStampedModel):
     """Mirrors `event_sessions`. See app/models/event_session.rb.

@@ -66,6 +66,18 @@ class Chapter(TimeStampedModel):
     def next_upcoming_event(self):
         return self.upcoming_events().order_by("start_time").first()
 
+    def upcoming_events_ics(self):
+        """Ports Chapter#upcoming_events_ics — used by the /chapters/<id>/calendar.ics feed."""
+        from icalendar import Calendar
+
+        cal = Calendar()
+        cal.add("x-wr-calname", f"null {self.name} Events")
+        cal.add("version", "2.0")
+        cal.add("prodid", "-//null Community Platform//null.community//")
+        for event in self.upcoming_events().order_by("start_time"):
+            cal.add_component(event.to_ics_event())
+        return cal.to_ical()
+
     @classmethod
     def active_chapters(cls):
         return cls.objects.filter(active=True)

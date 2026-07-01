@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block page_title %}{{ venue.name }}{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h1>{{ venue.name }}</h1></div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-5">
+    <address>{{ venue.address|markdown_html }}</address>
+  </div>
+  <div class="col-md-7">
+    {% if venue.map_embedd_code %}
+      {{ venue.map_embedd_code|safe }}
+    {% elif venue.map_url %}
+      <a href="{{ venue.map_url|safe_url }}" target="_blank" rel="noreferrer"><i class="fa fa-map-marker"></i> View on map</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
