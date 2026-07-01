@@ -1,0 +1,15 @@
+Date: {{ event.start_time|date:"l F d Y" }}
+Sessions:
+{% for s in sessions %}{% if s.placeholder %}  {{ s.start_time|date:"h:iA" }} {{ s.name }}
+{% else %}  {{ s.start_time|date:"h:iA" }} {{ s.name }} by {{ s.speaker_name }}
+{% endif %}{% endfor %}
+{% if not invite_only %}
+Venue:
+
+{{ event.venue.name|striptags }}
+{{ event.venue.address|striptags }}
+{% if event.venue.map_url %}
+Map URL:
+  {{ event.venue.map_url|striptags }}
+{% endif %}
+{% endif %}

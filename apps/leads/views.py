@@ -12,6 +12,7 @@ from apps.accounts.models import User
 from apps.chapters.models import Chapter
 from apps.events.models import Event, EventRegistration, EventSession, Venue
 from apps.notifications.models import EventMailerTask
+from apps.notifications.tasks import send_event_mailer_task
 
 from .forms import (
     LeadChapterForm,
@@ -345,13 +346,15 @@ def mailer_task_edit(request, event_id, pk):
 @require_POST
 def mailer_task_execute(request, event_id, pk):
     """Ported from Leads::EventMailerTasksController#execute — flips
-    ready_for_delivery so the Celery task (apps/notifications/tasks.py)
-    picks it up. Actual delivery is still a TODO there (see task #17)."""
+    ready_for_delivery and dispatches the Celery task that sends the mail
+    (apps/notifications/tasks.py:send_event_mailer_task). Synchronous in
+    dev via CELERY_TASK_ALWAYS_EAGER."""
     event = _load_authorized_event(request, event_id)
     task = get_object_or_404(EventMailerTask, pk=pk, event=event)
     if not task.executed and not task.ready_for_delivery:
         task.ready_for_delivery = True
         task.save()
+        send_event_mailer_task.delay(task.pk)
         messages.success(request, "Mailer task queued for delivery.")
     return redirect("leads:mailer_task_index", event_id=event.pk)
 

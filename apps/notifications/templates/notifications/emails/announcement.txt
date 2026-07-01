@@ -1,0 +1,17 @@
+** This is an auto generated mail from Swachalit for event announcement **
+
+{{ event.event_type.description|default:""|striptags }}
+
+{% include "notifications/emails/_event_details.txt" %}
+{% if event.registration_start_time %}
+Registration Start Time : {{ event.registration_start_time }}
+{% endif %}{% if event.registration_end_time %}
+Registration End Time : {{ event.registration_end_time }}
+{% endif %}
+{% if event.max_registration %}
+  LIMITED Seats, Registration closes when {{ event.max_registration }} Registrations received or at
+  {{ event.registration_end_time }}
+{% endif %}
+
+For further details and Registration/RSVP please visit the following URL:
+{{ event_url }}

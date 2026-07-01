@@ -1,0 +1,16 @@
+** This is an auto generated mail from Swachalit **
+
+This is a reminder for your speaking/presentation session with below details:
+
+Session:       {{ session.name }}
+Event:         {{ session.event.descriptive_name }}
+Start Time:    {{ session.start_time|date:"l F d Y g:i A" }}
+
+The session details are available at:
+{{ session_url }}
+
+You may edit the description of your session if you want, however you must be signed-in to the Swachalit platform in order to do so. Please follow the link below to edit session description:
+
+{{ session_url }}
+
+We thank you for your contribution to the community.

@@ -1,0 +1,16 @@
+** This is an auto generated mail from Swachalit **
+
+You are receiving this mail as you have been assigned a speaker for:
+
+Session:       {{ session.name }}
+Event:         {{ session.event.descriptive_name }}
+Start Time:    {{ session.start_time|date:"l F d Y g:i A" }}
+
+The session details are available at:
+{{ session_url }}
+
+You are requested to edit the session description to suit your talk as soon as possible. To edit the session description, please sign-in to Swachalit platform using this email address and visit the following URL:
+
+{{ session_url }}
+
+We thank you for your contribution to the community.

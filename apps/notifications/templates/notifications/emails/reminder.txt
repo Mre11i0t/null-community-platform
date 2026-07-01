@@ -1,0 +1,9 @@
+** This is an auto generated mail from Swachalit **
+
+Gentle Reminder for the upcoming event!
+
+{{ event.event_type.description|default:""|striptags }}
+
+{% include "notifications/emails/_event_details.txt" %}
+For further details and Registration/RSVP please visit the following URL:
+{{ event_url }}

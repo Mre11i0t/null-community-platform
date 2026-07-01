@@ -174,6 +174,17 @@ CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = "django-db"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+# Periodic sweep replacing Resque Scheduler's one-shot delayed jobs — ports
+# Event's notification_state machine (see apps/notifications/tasks.py
+# dispatch_event_notifications). Runs every 15 minutes in prod; nothing polls
+# this automatically in dev unless celery beat is started separately, so
+# during manual testing call the task directly.
+CELERY_BEAT_SCHEDULE = {
+    "dispatch-event-notifications": {
+        "task": "apps.notifications.tasks.dispatch_event_notifications",
+        "schedule": 900.0,
+    },
+}
 
 # reCAPTCHA — used on signup, RSVP, and session comments in the original app
 RECAPTCHA_PUBLIC_KEY = env("RECAPTCHA_PUBLIC_KEY", default="")
@@ -205,6 +216,15 @@ CFG_APP_DESCRIPTION = env(
 )
 CFG_GOOGLE_GROUPS_URL = "https://groups.google.com/forum/#!forum/null-co-in"
 CFG_VOLUNTEER_FORM_URL = env("CFG_VOLUNTEER_FORM_URL", default="https://null.community")
+
+# Mirrors CFG_NOTIFICATION_ANNOUNCEMENT_DEFAULT_ADDRESSES / CFG_NOTIFICATION_ADMIN_EVENT_CREATE
+NOTIFICATION_ANNOUNCEMENT_ADDRESSES = env.list(
+    "NOTIFICATION_ANNOUNCEMENT_ADDRESSES", default=["announce@null.community"]
+)
+NOTIFICATION_ADMIN_EVENT_CREATE = env.list("NOTIFICATION_ADMIN_EVENT_CREATE", default=["admin@null.community"])
+
+# Used to build absolute URLs inside emails, where there is no request object.
+SITE_BASE_URL = env("SITE_BASE_URL", default="http://localhost:8000")
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = env("MAILGUN_SMTP_HOST", default="localhost")
