@@ -37,6 +37,7 @@ class EventAutomaticNotificationTask(TimeStampedModel):
     MODE_ANNOUNCEMENT = "Announcement"
     MODE_SPEAKER_NOTIFICATION = "SpeakerNotification"
     MODE_EVENT_REMINDER = "EventReminder"
+    MODE_EVENT_REMINDER_FINAL = "EventReminderFinal"
     MODE_SPEAKER_REMINDER = "SpeakerReminder"
     MODE_ADMIN_ON_CREATE = "AdminOnCreate"
     MODE_PRESENTATION_UPDATE_REMINDER = "PresentationUpdateReminder"
@@ -45,6 +46,7 @@ class EventAutomaticNotificationTask(TimeStampedModel):
         (MODE_ANNOUNCEMENT, "Announcement"),
         (MODE_SPEAKER_NOTIFICATION, "Speaker Notification"),
         (MODE_EVENT_REMINDER, "Event Reminder"),
+        (MODE_EVENT_REMINDER_FINAL, "Event Reminder Final"),
         (MODE_SPEAKER_REMINDER, "Speaker Reminder"),
         (MODE_ADMIN_ON_CREATE, "Admin On Create"),
         (MODE_PRESENTATION_UPDATE_REMINDER, "Presentation Update Reminder"),

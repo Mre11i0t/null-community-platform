@@ -83,6 +83,7 @@ def send_automatic_notification(task_id: int) -> None:
         EventAutomaticNotificationTask.MODE_ANNOUNCEMENT: _send_announcement,
         EventAutomaticNotificationTask.MODE_SPEAKER_NOTIFICATION: _send_speaker_notification,
         EventAutomaticNotificationTask.MODE_EVENT_REMINDER: _send_event_reminder,
+        EventAutomaticNotificationTask.MODE_EVENT_REMINDER_FINAL: _send_rsvp_reminders,
         EventAutomaticNotificationTask.MODE_SPEAKER_REMINDER: _send_speaker_reminder,
         EventAutomaticNotificationTask.MODE_ADMIN_ON_CREATE: _send_admin_on_create,
         EventAutomaticNotificationTask.MODE_PRESENTATION_UPDATE_REMINDER: _send_presentation_update_reminder,
@@ -222,7 +223,7 @@ def dispatch_event_notifications() -> None:
         start_time__lte=now + timezone.timedelta(days=1),
     )
     for event in reminder2_events:
-        _send_rsvp_reminders(event)
+        _create_and_run(event, EventAutomaticNotificationTask.MODE_EVENT_REMINDER_FINAL)
         event.notification_state = Event.STATE_REMINDER2
         event.save(update_fields=["notification_state"])
 
@@ -244,9 +245,9 @@ def _create_and_run(event, mode):
 
 
 def _send_rsvp_reminders(event):
-    """Ports EventAutomaticNotificationTask#rsvp_user_reminder (Reminder2 —
-    sent directly to confirmed attendees, so it has no MODE_* of its own
-    in the original either — the state machine calls it inline)."""
+    """Ports EventAutomaticNotificationTask#rsvp_user_reminder
+    (MODE_EVENT_REMINDER_FINAL) — sent directly to confirmed attendees
+    at the Reminder2 transition."""
     from apps.events.models import EventRegistration
 
     context_base = _event_context(event)
