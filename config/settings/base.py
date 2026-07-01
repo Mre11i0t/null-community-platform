@@ -143,6 +143,7 @@ ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # our User has no username field, emai
 # deriving them from ACCOUNT_LOGIN_METHODS/ACCOUNT_SIGNUP_FIELDS.
 ACCOUNT_AUTHENTICATION_METHOD = "email"
 ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_FORMS = {"signup": "apps.accounts.forms.CaptchaSignupForm"}
 ACCOUNT_RATE_LIMITS = {
     "login_failed": "5/5m",  # mirrors Devise :lockable
 }
