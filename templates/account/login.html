@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block page_title %}Sign-in - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h2>Sign-in</h2></div>
+    <div class="row">
+      <div class="col-md-6">
+        {% if form.errors %}
+        <div class="alert alert-danger alert-block">
+          <button type="button" class="close" data-dismiss="alert">x</button>
+          <p>The email or password you entered is incorrect.</p>
+        </div>
+        {% endif %}
+        <form method="post" action="{% url 'account_login' %}" class="form">
+          {% csrf_token %}
+          <div class="form-group">
+            <label for="id_login">Email</label>
+            <input type="email" name="login" id="id_login" class="form-control" autofocus required value="{{ form.login.value|default:'' }}">
+          </div>
+          <div class="form-group">
+            <label for="id_password">Password</label>
+            <input type="password" name="password" id="id_password" class="form-control" required>
+          </div>
+          {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+          {% endif %}
+          <button type="submit" class="btn btn-lg btn-primary"><i class="fa fa-sign-in"></i> Sign-in</button>
+        </form>
+        <br>
+        <a href="{% url 'account_signup' %}">Need an Account? Sign-up Here</a><br>
+        <a href="{% url 'account_reset_password' %}">Forgot your password?</a><br>
+        <a href="{% url 'account_email_verification_sent' %}">Re-send confirmation mail?</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -136,6 +136,12 @@ ACCOUNT_EMAIL_VERIFICATION = "mandatory"  # mirrors Devise :confirmable
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # our User has no username field, email-only login
+# Legacy-named settings kept in sync with the above for this allauth
+# version's system checks, which still read these directly rather than
+# deriving them from ACCOUNT_LOGIN_METHODS/ACCOUNT_SIGNUP_FIELDS.
+ACCOUNT_AUTHENTICATION_METHOD = "email"
+ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_RATE_LIMITS = {
     "login_failed": "5/5m",  # mirrors Devise :lockable
 }
