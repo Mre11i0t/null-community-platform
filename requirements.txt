@@ -52,8 +52,9 @@ django-auditlog==3.0.0
 # Tagging
 django-taggit==6.1.0
 
-# Voting
-django-vote==2.5.0
+# Voting is first-party (apps.events.models.SessionVote) — django-vote's
+# bundled migrations use Meta.index_together, removed in Django 5.1,
+# making the package uninstallable on this stack.
 
 # Utils
 Markdown==3.7

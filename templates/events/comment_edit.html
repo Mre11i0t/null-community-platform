@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block page_title %}Edit Comment - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h2>Edit Comment</h2></div>
+    <form method="post" action="{% url 'events:comment_update' comment.pk %}">
+      {% csrf_token %}
+      <div class="form-group">
+        <textarea name="comment_body" class="form-control" rows="4">{{ comment.comment_body }}</textarea>
+      </div>
+      <button type="submit" class="btn btn-sm btn-primary">Save</button>
+      <a href="{% url 'events:session_detail' comment.event_session_id %}" class="btn btn-sm btn-default">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -179,7 +179,15 @@ class Event(TimeStampedModel):
 
 
 class EventSession(TimeStampedModel):
-    """Mirrors `event_sessions`. See app/models/event_session.rb."""
+    """Mirrors `event_sessions`. See app/models/event_session.rb.
+
+    Voting: the original used acts_as_votable (a separate polymorphic
+    `votes` table). django-vote was tried as a replacement but its
+    bundled migrations use Meta.index_together, removed in Django 5.1
+    — uninstallable on this stack. SessionVote (below) is a small
+    first-party model instead: one row per (session, user), toggled
+    up/down, same behavior as the original's like/dislike actions.
+    """
 
     EDIT_WINDOW_DAYS = 30
 
@@ -223,6 +231,30 @@ class EventSession(TimeStampedModel):
     def is_editable(self):
         """Editable only within EDIT_WINDOW_DAYS of the event end (event.rb)."""
         return timezone.now() <= self.event.end_time + timezone.timedelta(days=self.EDIT_WINDOW_DAYS)
+
+    def likes_count(self):
+        return self.votes.filter(is_upvote=True).count()
+
+    def dislikes_count(self):
+        return self.votes.filter(is_upvote=False).count()
+
+
+class SessionVote(TimeStampedModel):
+    """First-party replacement for acts_as_votable — see EventSession
+    docstring. One row per (session, user); is_upvote toggles between
+    like/dislike, mirroring the original's voted_up_on?/voted_down_on?
+    + likes/dislikes + unliked_by/undisliked_by toggle semantics.
+    """
+
+    session = models.ForeignKey(EventSession, on_delete=models.CASCADE, related_name="votes")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="session_votes")
+    is_upvote = models.BooleanField()
+
+    class Meta:
+        db_table = "event_session_votes"
+        constraints = [
+            models.UniqueConstraint(fields=["session", "user"], name="unique_vote_per_user_per_session"),
+        ]
 
 
 class EventSessionComment(TimeStampedModel):

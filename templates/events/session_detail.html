@@ -48,5 +48,76 @@
     {% if session.video_url %}<a href="{{ session.video_url|safe_url }}" class="fa-file-video-o fa fa-5x" target="_blank"></a>{% endif %}
   </div>
 </div>
-{# Comments/voting (event_sessions/_reaction.html.erb in the original) not yet ported — see task #9. #}
+
+<div class="row" id="comments-area" style="margin-top:2em;">
+  <div class="col-md-12">
+    <div class="reaction">
+      {% if user.is_authenticated %}
+      <form method="post" action="{% url 'events:session_like' session.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-link {% if user_vote == 'up' %}text-primary{% else %}text-muted{% endif %}">
+          <i class="fa fa-thumbs-up"></i> <span>{{ session.likes_count }}</span>
+        </button>
+      </form>
+      <form method="post" action="{% url 'events:session_dislike' session.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-link {% if user_vote == 'down' %}text-primary{% else %}text-muted{% endif %}">
+          <i class="fa fa-thumbs-down"></i> <span>{{ session.dislikes_count }}</span>
+        </button>
+      </form>
+      {% else %}
+      <span class="text-muted"><i class="fa fa-thumbs-up"></i> {{ session.likes_count }} &nbsp; <i class="fa fa-thumbs-down"></i> {{ session.dislikes_count }}</span>
+      {% endif %}
+      <span class="text-muted"><i class="fa fa-comments"></i> {{ comments|length }}</span>
+    </div>
+
+    {% if user.is_authenticated %}
+    <form method="post" action="{% url 'events:comment_create' session.pk %}" style="margin-top:1em;">
+      {% csrf_token %}
+      {% if comment_form.errors %}
+      <div class="alert alert-danger alert-block">
+        <button type="button" class="close" data-dismiss="alert">x</button>
+        {% for field in comment_form %}{% for error in field.errors %}<p>{{ error }}</p>{% endfor %}{% endfor %}
+      </div>
+      {% endif %}
+      <div class="form-group">{{ comment_form.comment_body }}</div>
+      <div class="form-group">{{ comment_form.captcha }}</div>
+      <button type="submit" class="btn btn-sm btn-primary">Add Comment</button>
+    </form>
+    {% else %}
+    <div class="text-center text-muted" style="margin-top:1em;">You need to be signed in to add comments.</div>
+    {% endif %}
+
+    <div class="comment" style="margin-top:1.5em;">
+      {% for comment in comments %}
+      <div class="media" id="comment-{{ comment.pk }}">
+        <div class="media-left media-top">
+          <a href="{% url 'accounts:public_profile' comment.user.pk %}">
+            <img src="{{ comment.user.avatar_url }}" class="img" width="50" height="50" alt="{{ comment.user.name }}">
+          </a>
+        </div>
+        <div class="media-body">
+          <div class="media-heading">
+            <span class="h4"><a href="{% url 'accounts:public_profile' comment.user.pk %}" style="text-decoration:none;">{{ comment.user.name }}</a></span>
+            <span class="text-muted">{{ comment.created_at|timesince }} ago</span>
+          </div>
+          <div class="h5 comment-body">{{ comment.comment_body }}</div>
+          {% if user.is_authenticated and comment.user_id == user.id %}
+          <div>
+            <a href="{% url 'events:comment_update' comment.pk %}" class="text-muted">Edit</a>
+            <form method="post" action="{% url 'events:comment_delete' comment.pk %}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete the comment?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-link btn-xs text-muted">Delete</button>
+            </form>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <hr>
+      {% empty %}
+      <p class="text-muted">No comments yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
 {% endblock %}
