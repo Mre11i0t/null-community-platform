@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block page_title %}Session Proposals - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <h1>Session Proposals</h1>
+    <table class="table table-condensed">
+      <tr>
+        <th width="10%">#</th>
+        <th width="20%">Chapter</th>
+        <th width="20%">Event Type</th>
+        <th width="40%">Name</th>
+        <th></th>
+      </tr>
+      {% for proposal in page_obj %}
+      <tr>
+        <td>{{ proposal.pk }}</td>
+        <td>{{ proposal.chapter.name }}</td>
+        <td>{{ proposal.event_type.name }}</td>
+        <td>{{ proposal.session_topic }}</td>
+        <td>
+          {% if proposal.user_id == user.id %}
+          <a href="{% url 'proposals:proposal_edit' proposal.pk %}" style="text-decoration:none;"><i class="fa fa-edit"></i> Edit Proposal</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td colspan="5">
+          {% if page_obj.paginator.num_pages > 1 %}
+          <nav>
+            <ul class="pagination">
+              {% for num in page_obj.paginator.page_range %}
+              <li {% if num == page_obj.number %}class="active"{% endif %}><a href="?page={{ num }}">{{ num }}</a></li>
+              {% endfor %}
+            </ul>
+          </nav>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+{% endblock %}
