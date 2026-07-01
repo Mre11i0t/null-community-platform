@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
@@ -163,6 +164,13 @@ class Event(TimeStampedModel):
             return self.registration_start_time < now < self.registration_end_time
         return False
 
+    def registerable_in_future(self):
+        return bool(
+            self.accepting_registration
+            and self.registration_start_time
+            and self.registration_start_time > timezone.now()
+        )
+
     def register_name(self):
         return "Register" if self.invite_only() else "RSVP"
 
@@ -264,6 +272,28 @@ class EventRegistration(TimeStampedModel):
         constraints = [
             models.UniqueConstraint(fields=["event", "user"], name="unique_user_per_event_registration"),
         ]
+
+    def clean(self):
+        """Ported from EventRegistration#new_registration_validator (only
+        ran on new_record? in Rails) — blocks RSVP when the event is full
+        or outside its registration window."""
+        super().clean()
+        if self._state.adding:
+            errors = {}
+            if not self.event.registration_allowed():
+                errors["event"] = "Registration is not allowed for this event (it is full)."
+            if not self.event.registration_active():
+                errors["event"] = "Registration is not active for this event."
+            if errors:
+                raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        """Ported from EventRegistration#set_default_state! (before_create):
+        invite-only events start Provisional pending leader approval,
+        open events are auto-Confirmed."""
+        if self._state.adding and not self.state:
+            self.state = self.STATE_PROVISIONAL if self.event.invite_only() else self.STATE_CONFIRMED
+        super().save(*args, **kwargs)
 
     def confirmed(self):
         return self.state == self.STATE_CONFIRMED

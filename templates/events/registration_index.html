@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block page_title %}Event Registrations - {{ event.descriptive_name }}{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h2>Event Registrations
+        <small><a href="{% url 'events:detail' event.pk %}">{{ event.descriptive_name }}</a></small>
+      </h2>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  {% for reg in registrations %}
+  <div class="col-md-1">
+    <a href="{% url 'accounts:public_profile' reg.user.pk %}">
+      <img src="{{ reg.user.avatar_url }}" class="img img-rounded" width="80" height="80" alt="{{ reg.user.name }}">
+    </a>
+    <br>
+    <small><a href="{% url 'accounts:public_profile' reg.user.pk %}" style="text-decoration:none;">{{ reg.user.name|truncatechars:10 }}</a></small>
+  </div>
+  {% empty %}
+  <div class="col-md-12"><p class="text-muted">No registrations yet.</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

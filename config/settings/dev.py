@@ -16,7 +16,11 @@ CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=True)  #
 # email link on every fresh migrate.
 ACCOUNT_EMAIL_VERIFICATION = "optional"
 
-# django-recaptcha test keys (always pass, never call Google) — see
+# django-recaptcha's official published test keys — the widget always
+# shows a pre-checked checkbox and Google's siteverify endpoint always
+# returns success for these specific keys (server-side verification
+# still makes a real HTTP call to Google, just always passes). See
 # https://developers.google.com/recaptcha/docs/faq#id-like-to-run-automated-tests-with-recaptcha-what-should-i-do
 RECAPTCHA_PUBLIC_KEY = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
 RECAPTCHA_PRIVATE_KEY = "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"
+SILENCED_SYSTEM_CHECKS = ["django_recaptcha.recaptcha_test_key_error"]

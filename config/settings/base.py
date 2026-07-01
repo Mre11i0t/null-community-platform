@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "django_celery_results",
     "crispy_forms",
     "crispy_bootstrap5",
+    "django_recaptcha",
     # Local apps — mirror the original Rails models/controllers split
     "apps.core",
     "apps.accounts",
@@ -180,10 +181,17 @@ RECAPTCHA_PRIVATE_KEY = env("RECAPTCHA_PRIVATE_KEY", default="")
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ["'self'"],
-        "script-src": ["'self'", "https://checkout.razorpay.com", "'unsafe-inline'"],
+        "script-src": [
+            "'self'",
+            "https://checkout.razorpay.com",
+            "https://www.google.com/recaptcha/",
+            "https://www.gstatic.com/recaptcha/",
+            "'unsafe-inline'",
+        ],
         "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         "font-src": ["'self'", "https://fonts.gstatic.com"],
         "img-src": ["'self'", "data:", "https:"],
+        "frame-src": ["'self'", "https://www.google.com/recaptcha/"],
     }
 }
 

@@ -9,9 +9,12 @@
         {{ event.descriptive_name }}
         <span class="pull-right">
           {% if user.is_authenticated and user_registration %}
-            <a href="#" class="btn btn-danger"><i class="fa fa-users"></i> Cancel Registration</a>
+            <form method="post" action="{% url 'events:registration_destroy' event.pk user_registration.pk %}" style="display:inline;" onsubmit="return confirm('Are you sure you want to unregister from this event?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger"><i class="fa fa-users"></i> Cancel Registration</button>
+            </form>
           {% else %}
-            <a href="#" class="btn btn-success"><i class="fa fa-users"></i> {{ event.register_name }}</a>
+            <a href="{% url 'events:registration_new' event.pk %}" class="btn btn-success"><i class="fa fa-users"></i> {{ event.register_name }}</a>
           {% endif %}
         </span>
       </h1>
@@ -51,7 +54,7 @@
     <table class="table table-bordered">
       <tr><th width="20%">Date</th><td>{{ event.start_time|date:"l F d Y" }}</td></tr>
       <tr><th>Chapter</th><td><a href="{% url 'chapters:detail' event.chapter.pk %}">{{ event.chapter.name }}</a></td></tr>
-      <tr><th>Registrations</th><td>{{ event.event_registrations.count }}</td></tr>
+      <tr><th>Registrations</th><td><a href="{% url 'events:registration_index' event.pk %}">{{ event.event_registrations.count }}</a></td></tr>
       <tr><th>Max Registrations</th><td>{% if event.max_registration %}{{ event.max_registration }}{% else %}Unlimited{% endif %}</td></tr>
       <tr><th>Event Type</th><td>{% if event.invite_only %}Invite Only{% else %}Open to Everybody{% endif %}</td></tr>
       <tr><th>Start Time</th><td>{{ event.start_time|date:"g:i A" }}</td></tr>
