@@ -1,7 +1,10 @@
+import secrets
+
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.core.models import TimeStampedModel
 
@@ -156,6 +159,8 @@ class UserAuthProfile(TimeStampedModel):
 class UserApiToken(TimeStampedModel):
     """Mirrors user_api_tokens — API auth, 24h expiry by default."""
 
+    DEFAULT_EXPIRY = timezone.timedelta(days=1)
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="api_tokens")
     user_agent = models.CharField(max_length=255, blank=True)
     client_name = models.CharField(max_length=255, blank=True)
@@ -166,3 +171,24 @@ class UserApiToken(TimeStampedModel):
 
     class Meta:
         db_table = "user_api_tokens"
+
+    def save(self, *args, **kwargs):
+        """Ported from UserApiToken#generate_token! (before_validation)."""
+        if self._state.adding and not self.token:
+            self.token = secrets.token_urlsafe(48)
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def create_for_request(cls, user, client_name, request):
+        """Ported from UserApiToken.create_for_request/.create_for_user."""
+        return cls.objects.create(
+            user=user,
+            client_name=client_name,
+            user_agent=request.META.get("HTTP_USER_AGENT", ""),
+            ip_address=request.META.get("HTTP_X_REAL_IP") or request.META.get("REMOTE_ADDR", ""),
+            expire_at=timezone.now() + cls.DEFAULT_EXPIRY,
+        )
+
+    def set_active(self):
+        self.active = True
+        self.save(update_fields=["active"])
