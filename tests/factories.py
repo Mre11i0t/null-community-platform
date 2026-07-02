@@ -80,7 +80,7 @@ class EventFactory(factory.django.DjangoModelFactory):
 
     name = factory.Sequence(lambda n: f"Test Event {n}")
     chapter = factory.SubFactory(ChapterFactory)
-    venue = factory.SubFactory(VenueFactory)
+    venue = factory.SubFactory(VenueFactory, chapter=factory.SelfAttribute("..chapter"))
     event_type = factory.SubFactory(EventTypeFactory)
     description = "An event description."
     public = True
