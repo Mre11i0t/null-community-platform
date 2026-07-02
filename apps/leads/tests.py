@@ -185,6 +185,19 @@ def test_venue_new_rejects_a_chapter_the_user_does_not_manage(client, lead_and_c
     assert "chapter" in response.context["form"].errors
 
 
+def test_venue_new_success(client, lead_and_chapter):
+    lead, chapter = lead_and_chapter
+    client.force_login(lead)
+
+    response = client.post(
+        reverse("leads:venue_new"),
+        {"chapter": chapter.pk, "name": "New Venue", "address": "somewhere", "contact_name": "x"},
+    )
+
+    assert response.status_code == 302
+    assert Venue.objects.filter(name="New Venue", chapter=chapter).exists()
+
+
 def test_venue_show_forbidden_for_a_venue_in_another_chapter(client, lead_and_chapter):
     lead, _chapter = lead_and_chapter
     other_venue = VenueFactory()
@@ -282,6 +295,25 @@ def test_mailer_task_execute_forbidden_for_a_different_chapters_event(client, le
     assert task.executed is False
 
 
+def test_mailer_task_execute_success_sends_the_email(client, lead_and_chapter):
+    from django.core import mail
+
+    lead, chapter = lead_and_chapter
+    event = EventFactory(chapter=chapter)
+    EventRegistrationFactory(event=event)
+    task = EventMailerTask.objects.create(event=event, subject="s", body="b")
+    client.force_login(lead)
+    mail.outbox.clear()
+
+    response = client.post(reverse("leads:mailer_task_execute", args=[event.pk, task.pk]))
+
+    assert response.status_code == 302
+    task.refresh_from_db()
+    assert task.executed is True
+    assert task.ready_for_delivery is False
+    assert len(mail.outbox) == 1
+
+
 # --- Chapters --------------------------------------------------------------
 
 
@@ -303,3 +335,185 @@ def test_chapter_edit_forbidden_for_unmanaged_chapter(client, lead_and_chapter):
     response = client.get(reverse("leads:chapter_edit", args=[other_chapter.pk]))
 
     assert response.status_code == 403
+
+
+def test_chapter_edit_updates_the_chapter(client, lead_and_chapter):
+    lead, chapter = lead_and_chapter
+    client.force_login(lead)
+
+    response = client.post(
+        reverse("leads:chapter_edit", args=[chapter.pk]),
+        {
+            "chapter_email": "new@example.com",
+            "description": "Updated description",
+            "city": "Pune",
+            "state": "MH",
+            "country": "IN",
+        },
+    )
+
+    assert response.status_code == 302
+    chapter.refresh_from_db()
+    assert chapter.chapter_email == "new@example.com"
+
+
+# --- Remaining index/show/edit views (coverage completeness pass) ----------
+
+
+def test_event_index_switches_between_current_and_old_events(client, lead_and_chapter):
+    lead, chapter = lead_and_chapter
+    client.force_login(lead)
+
+    response = client.get(reverse("leads:event_index"))
+    assert response.status_code == 200
+    assert response.context["show_old"] is None
+
+    response = client.get(reverse("leads:event_index"), {"show_old": "1"})
+    assert response.status_code == 200
+    assert response.context["show_old"] == "1"
+
+
+def test_event_edit_updates_the_event(client, lead_and_chapter):
+    lead, chapter = lead_and_chapter
+    event = EventFactory(chapter=chapter, name="Old Name")
+    client.force_login(lead)
+
+    response = client.post(
+        reverse("leads:event_edit", args=[event.pk]),
+        {
+            "event_type": event.event_type.pk,
+            "chapter": chapter.pk,
+            "name": "New Name",
+            "venue": event.venue.pk,
+            "description": "desc",
+            "start_time": "2027-01-01T18:00",
+            "end_time": "2027-01-01T20:00",
+            "max_registration": 0,
+        },
+    )
+
+    assert response.status_code == 302
+    event.refresh_from_db()
+    assert event.name == "New Name"
+
+
+def test_event_edit_forbidden_for_a_different_chapter(client, lead_and_chapter):
+    lead, _chapter = lead_and_chapter
+    other_event = EventFactory()
+    client.force_login(lead)
+
+    response = client.get(reverse("leads:event_edit", args=[other_event.pk]))
+
+    assert response.status_code == 403
+
+
+def test_session_index_and_show(client, lead_and_chapter):
+    lead, chapter = lead_and_chapter
+    event = EventFactory(chapter=chapter)
+    session = EventSessionFactory(event=event)
+    client.force_login(lead)
+
+    response = client.get(reverse("leads:session_index", args=[event.pk]))
+    assert response.status_code == 200
+    assert session in response.context["sessions"]
+
+    response = client.get(reverse("leads:session_show", args=[event.pk, session.pk]))
+    assert response.status_code == 200
+    assert response.context["session"] == session
+
+
+def test_session_edit_updates_the_session(client, lead_and_chapter):
+    lead, chapter = lead_and_chapter
+    event = EventFactory(chapter=chapter)
+    session = EventSessionFactory(event=event, name="Old Title")
+    client.force_login(lead)
+
+    response = client.post(
+        reverse("leads:session_edit", args=[event.pk, session.pk]),
+        {
+            "user": session.user.pk,
+            "name": "New Title",
+            "description": "desc",
+            "start_time": "2027-01-01T18:00",
+            "end_time": "2027-01-01T18:30",
+        },
+    )
+
+    assert response.status_code == 302
+    session.refresh_from_db()
+    assert session.name == "New Title"
+
+
+def test_venue_index_only_shows_managed_venues(client, lead_and_chapter):
+    lead, chapter = lead_and_chapter
+    mine = VenueFactory(chapter=chapter)
+    VenueFactory()  # someone else's
+    client.force_login(lead)
+
+    response = client.get(reverse("leads:venue_index"))
+
+    assert list(response.context["venues"]) == [mine]
+
+
+def test_venue_edit_updates_the_venue(client, lead_and_chapter):
+    lead, chapter = lead_and_chapter
+    venue = VenueFactory(chapter=chapter, name="Old Venue Name")
+    client.force_login(lead)
+
+    response = client.post(
+        reverse("leads:venue_edit", args=[venue.pk]),
+        {
+            "chapter": chapter.pk,
+            "name": "New Venue Name",
+            "address": "123 St",
+            "contact_name": "x",
+        },
+    )
+
+    assert response.status_code == 302
+    venue.refresh_from_db()
+    assert venue.name == "New Venue Name"
+
+
+def test_registration_index_shows_registrations(client, lead_and_chapter):
+    lead, chapter = lead_and_chapter
+    event = EventFactory(chapter=chapter)
+    registration = EventRegistrationFactory(event=event)
+    client.force_login(lead)
+
+    response = client.get(reverse("leads:registration_index", args=[event.pk]))
+
+    assert response.status_code == 200
+    assert registration in response.context["registrations"]
+
+
+def test_mailer_task_index_show_new_edit(client, lead_and_chapter):
+    lead, chapter = lead_and_chapter
+    event = EventFactory(chapter=chapter)
+    client.force_login(lead)
+
+    response = client.post(
+        reverse("leads:mailer_task_new", args=[event.pk]),
+        {"subject": "Hello", "body": "World", "registration_state": ""},
+    )
+    assert response.status_code == 302
+    task = EventMailerTask.objects.get(event=event, subject="Hello")
+
+    response = client.get(reverse("leads:mailer_task_index", args=[event.pk]))
+    assert response.status_code == 200
+    assert task in response.context["tasks"]
+
+    response = client.get(reverse("leads:mailer_task_show", args=[event.pk, task.pk]))
+    assert response.status_code == 200
+    assert response.context["task"] == task
+
+    response = client.post(
+        reverse("leads:mailer_task_edit", args=[event.pk, task.pk]),
+        {"subject": "Updated", "body": "World", "registration_state": "", "ready_for_delivery": "on"},
+    )
+    assert response.status_code == 302
+    task.refresh_from_db()
+    assert task.subject == "Updated"
+    # editing forces ready_for_delivery back to False regardless of what was posted,
+    # to prevent an edit accidentally re-triggering delivery.
+    assert task.ready_for_delivery is False
