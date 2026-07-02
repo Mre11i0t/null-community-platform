@@ -48,7 +48,7 @@ class EventSessionListView(generics.ListAPIView):
 
     def get_queryset(self):
         event = Event.objects.public_events().filter(pk=self.kwargs["event_id"]).first()
-        return event.event_sessions.all() if event else EventSession.objects.none()
+        return event.event_sessions.order_by("start_time") if event else EventSession.objects.none()
 
 
 class EventRegistrationListView(generics.ListAPIView):
@@ -61,7 +61,7 @@ class EventRegistrationListView(generics.ListAPIView):
         event = Event.objects.public_events().filter(pk=self.kwargs["event_id"]).first()
         if not event:
             return EventRegistration.objects.none()
-        return event.event_registrations.filter(visible=True).select_related("user")
+        return event.event_registrations.filter(visible=True).select_related("user").order_by("-created_at")
 
 
 class AuthenticatePasswordView(APIView):
@@ -104,7 +104,7 @@ class UserEventsView(generics.ListAPIView):
     def get_queryset(self):
         return Event.objects.filter(
             pk__in=self.request.user.registered_participation().values_list("event_id", flat=True)
-        )
+        ).order_by("-start_time")
 
 
 class UserSessionsView(generics.ListAPIView):
