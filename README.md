@@ -21,6 +21,13 @@ against **dev** settings (PyMySQL, `DEBUG=True`, reCAPTCHA test keys,
 `mysqlclient`, `collectstatic`, real email/SMTP, real reCAPTCHA keys)
 has not been exercised.
 
+A 122-test pytest suite (96% coverage across `apps/`, one `tests.py`
+per app plus `apps/core/test_templatetags.py`) now backs most of what's
+listed below — see "Running the tests" further down. It's what turned
+up the two real bugs described in the notes under each area, and it's
+what "people can actually test it" (the reason this rewrite happened)
+concretely means in practice.
+
 ### Working end-to-end (verified with real seeded data driven through the actual code path — not just a 200 at the route level)
 
 - Full data model for every table in the original `db/schema.rb`,
@@ -36,7 +43,12 @@ has not been exercised.
   templates, reCAPTCHA on signup.
 - **RSVP**: registration create/cancel, Provisional/Confirmed state
   machine and registration-window/capacity validation ported from the
-  original model callbacks, reCAPTCHA on the form.
+  original model callbacks, reCAPTCHA on the form. The pytest suite
+  found a real crash here: rejecting a full or registration-closed
+  event 500'd instead of showing the "all seats are gone" message,
+  because the model's `ValidationError` was keyed to `"event"`, a
+  field `EventRegistrationForm` doesn't expose — fixed by raising it
+  as a non-field error (see `apps/events/models.py` `clean()`).
 - **Session comments & voting**: full CRUD on comments (reCAPTCHA),
   like/dislike via a first-party `SessionVote` model (`django-vote` was
   tried and is incompatible with Django 5.1 — see its migrations'
@@ -54,7 +66,12 @@ has not been exercised.
   API's contract exactly (paths, field shapes, `Authorization: Bearer`
   token auth incl. 401-vs-403 semantics, status codes) — chapters,
   events, event sessions, event registrations, password auth,
-  users/me, users/events, users/sessions.
+  users/me, users/events, users/sessions. The pytest suite's coverage
+  pass also caught `UnorderedObjectListWarning` on three of these
+  list endpoints — paginating a queryset with no `Meta.ordering` and
+  no explicit `.order_by()` can return inconsistent/duplicate rows
+  across pages under concurrent writes. Fixed with explicit ordering
+  (`apps/api/views.py`).
 - **Notifications** (`apps/notifications`): custom leader email blasts
   (`EventMailerTask`, filtered by registration state) and all seven
   automatic-notification modes (Announcement, Speaker Notification,
@@ -170,6 +187,25 @@ python manage.py runserver
 ```
 
 Visit `http://127.0.0.1:8000/` (or whatever port you pass to `runserver`). Admin at `/admin/`.
+
+### Running the tests
+
+```bash
+pip install pytest pytest-django pytest-cov factory-boy faker  # if not already installed
+pytest                       # 122 tests, ~2s, 96% coverage across apps/
+pytest --cov=apps --cov-report=term-missing   # with a coverage breakdown
+```
+
+pytest-django creates and drops a real `test_swachalit` MySQL database
+per run (`--reuse-db` in `pytest.ini` keeps it around between runs for
+speed — pass `--create-db` once if you need a clean slate). On Python
+3.14 specifically, `pip install -r requirements-dev.txt` currently
+fails: `safety==3.2.14` pulls in a `pydantic-core` version with no
+prebuilt wheel for 3.14, and building it from source fails (PyO3's
+release at that pin doesn't support 3.14 yet). That's unrelated to
+testing — `safety`/`bandit` are separate lint/security-audit tools —
+so install just the packages above rather than the full dev
+requirements file if you hit that error.
 
 ### Why PyMySQL instead of mysqlclient for local dev
 
