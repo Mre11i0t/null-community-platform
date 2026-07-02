@@ -18,6 +18,13 @@ def _base_context_copy(self):
     return duplicate
 
 
+# NOTE: this is a workaround, not the real fix — a Django release that
+# supports Python 3.14 properly will fix __copy__ upstream, at which point
+# this monkeypatch becomes redundant (harmless, but dead weight) rather
+# than load-bearing. Safe to delete once this project's Django version
+# is bumped past whatever release closes that gap.
+
+
 BaseContext.__copy__ = _base_context_copy
 
 

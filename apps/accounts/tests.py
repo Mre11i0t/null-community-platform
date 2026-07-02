@@ -29,6 +29,36 @@ def test_signup_creates_user_and_sends_confirmation_email(client):
     assert "newmember@example.com" in mail.outbox[0].to[0]
 
 
+def test_login_by_email_succeeds_with_correct_password(client):
+    """ACCOUNT_AUTHENTICATION_METHOD="email" / ACCOUNT_USERNAME_REQUIRED=False
+    are this project's own settings, not allauth defaults — worth a real
+    (non-force_login) pass through the login view rather than just trusting
+    the config."""
+    UserFactory(email="logintest@example.com", password="correct-password")
+
+    response = client.post(
+        reverse("account_login"),
+        {"login": "logintest@example.com", "password": "correct-password"},
+    )
+
+    assert response.status_code == 302
+    response = client.get(reverse("core:home"))
+    assert response.wsgi_request.user.is_authenticated
+
+
+def test_login_by_email_fails_with_wrong_password(client):
+    UserFactory(email="logintest2@example.com", password="correct-password")
+
+    response = client.post(
+        reverse("account_login"),
+        {"login": "logintest2@example.com", "password": "wrong-password"},
+    )
+
+    assert response.status_code == 200  # re-renders the form, doesn't redirect
+    response = client.get(reverse("core:home"))
+    assert not response.wsgi_request.user.is_authenticated
+
+
 def test_public_profile_shows_speaker_sessions_and_registrations(client):
     user = UserFactory()
     session = EventSessionFactory(user=user)
