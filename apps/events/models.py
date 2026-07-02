@@ -328,16 +328,21 @@ class EventRegistration(TimeStampedModel):
     def clean(self):
         """Ported from EventRegistration#new_registration_validator (only
         ran on new_record? in Rails) — blocks RSVP when the event is full
-        or outside its registration window."""
+        or outside its registration window.
+
+        Raised as a non-field error (not keyed to "event"): "event" isn't
+        a field on EventRegistrationForm (it's set programmatically, not
+        user-editable), and ModelForm._post_clean() raises ValueError
+        ("has no field named 'event'") if a model-level ValidationError
+        tries to bind to a field the form doesn't expose — this used to
+        crash the RSVP view with a 500 instead of showing the message.
+        """
         super().clean()
         if self._state.adding:
-            errors = {}
             if not self.event.registration_allowed():
-                errors["event"] = "Registration is not allowed for this event (it is full)."
+                raise ValidationError("Registration is not allowed for this event (it is full).")
             if not self.event.registration_active():
-                errors["event"] = "Registration is not active for this event."
-            if errors:
-                raise ValidationError(errors)
+                raise ValidationError("Registration is not active for this event.")
 
     def save(self, *args, **kwargs):
         """Ported from EventRegistration#set_default_state! (before_create):
