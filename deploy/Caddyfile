@@ -1,0 +1,43 @@
+# Single-server chapter-sites deployment (PRD Part 0).
+#
+# One Caddy in front of one Django app serves:
+#   null.community              — root/directory site
+#   *.null.community            — every chapter site (one wildcard cert)
+#   nulldelhi.in, ...           — chapter custom domains (per-domain certs,
+#                                 issued on demand, gated by /domains/check)
+#
+# Replace null.community with your ROOT_DOMAIN, and app:8000 with wherever
+# gunicorn listens. The wildcard cert requires the ACME DNS challenge, so
+# build Caddy with your DNS provider module (e.g. cloudflare):
+#   xcaddy build --with github.com/caddy-dns/cloudflare
+
+{
+	email admin@null.community
+
+	# Before issuing a cert for an unknown host, ask Django whether the
+	# domain belongs to an active chapter. Without this gate, anyone who
+	# points a domain at this server gets certificates minted from our
+	# ACME account.
+	on_demand_tls {
+		ask http://app:8000/domains/check
+	}
+}
+
+# Root site + all chapter subdomains: one wildcard certificate.
+null.community, *.null.community {
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+	}
+	encode gzip
+	reverse_proxy app:8000
+}
+
+# Chapter custom domains: cert per domain, issued on first request,
+# only if /domains/check approves it.
+https:// {
+	tls {
+		on_demand
+	}
+	encode gzip
+	reverse_proxy app:8000
+}

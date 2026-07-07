@@ -216,6 +216,37 @@ the same `django.db.backends.mysql` engine works against either
 driver. Production (Dockerfile) installs the real `libmysqlclient-dev`
 and can use `mysqlclient` directly if preferred.
 
+## Chapter Sites (multi-tenant, one server)
+
+Each chapter is served as its own website from the same single deployment —
+no per-chapter servers, builds, or deployments. A chapter "site" is just
+data: the `Chapter` row (with its auto-filled `subdomain` and optional
+`custom_domain`) plus its events and pages.
+
+How a request finds its chapter:
+
+1. DNS: `*.null.community` wildcard → the one server; a custom domain
+   (`nulldelhi.in`) is a CNAME/ALIAS to the same place.
+2. TLS: Caddy (see `deploy/Caddyfile`) holds one wildcard cert for
+   `*.null.community` (ACME DNS challenge) and issues per-domain certs
+   on demand for custom domains — gated by `GET /domains/check?domain=`,
+   which only approves domains registered to an active chapter. This
+   gate is what stops strangers pointing domains at the server and
+   minting certs from our ACME account.
+3. Django: `ChapterSiteMiddleware` reads the Host header and sets
+   `request.chapter` (`None` on the root domain = directory site;
+   unknown hosts 404). Home/upcoming/archives scope to `request.chapter`;
+   templates get `current_chapter` from a context processor.
+
+Config: `ROOT_DOMAIN` (default `localhost`), and in prod set
+`SESSION_COOKIE_DOMAIN=.null.community` / `CSRF_COOKIE_DOMAIN` so one
+login works across every chapter subdomain (custom domains get their own
+session — cookies can't span unrelated domains).
+
+Dev needs no DNS tricks: browsers resolve `*.localhost` to 127.0.0.1, so
+`http://delhi.localhost:8000` works out of the box once a chapter named
+"Delhi" exists.
+
 ## Architecture
 
 ```

@@ -20,6 +20,8 @@ def home(request):
     intentionally left out here rather than faked — see task #9.
     """
     events = Event.objects.future_public_events().order_by("start_time")
+    if request.chapter:
+        events = events.filter(chapter=request.chapter)
     return render(
         request,
         "home/index.html",
@@ -30,12 +32,16 @@ def home(request):
 def upcoming(request):
     """Mirrors HomeController#upcoming."""
     events = Event.objects.future_public_events().order_by("start_time")
+    if request.chapter:
+        events = events.filter(chapter=request.chapter)
     return render(request, "home/upcoming.html", {"events": events})
 
 
 def archives(request):
     """Mirrors HomeController#archives — paginated past events."""
     events_qs = Event.objects.archives().order_by("-start_time")
+    if request.chapter:
+        events_qs = events_qs.filter(chapter=request.chapter)
     paginator = Paginator(events_qs, 25)
     page_obj = paginator.get_page(request.GET.get("page"))
     return render(request, "home/archives.html", {"page_obj": page_obj, "events": page_obj.object_list})

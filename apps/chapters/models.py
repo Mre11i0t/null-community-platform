@@ -11,6 +11,12 @@ class Chapter(TimeStampedModel):
 
     name = models.CharField(max_length=255, unique=True)
     code = models.CharField(max_length=255, blank=True)
+    # Chapter-sites architecture (PRD Part 0): each chapter is served on
+    # <subdomain>.<ROOT_DOMAIN>, optionally also on a custom apex domain
+    # the chapter CNAMEs/ALIASes at the platform. Both are hostnames only
+    # (no scheme, no port), stored lowercase.
+    subdomain = models.SlugField(max_length=63, unique=True, null=True, blank=True)
+    custom_domain = models.CharField(max_length=255, unique=True, null=True, blank=True)
     description = models.TextField()
     city = models.CharField(max_length=255, blank=True)
     state = models.CharField(max_length=255, blank=True)
@@ -31,8 +37,28 @@ class Chapter(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.subdomain:
+            self.subdomain = slugify(self.name)
+        if self.custom_domain:
+            self.custom_domain = self.custom_domain.lower().strip()
+        super().save(*args, **kwargs)
+
     def get_absolute_url(self):
         return reverse("chapters:detail", args=[self.pk])
+
+    def site_url(self):
+        """Canonical URL of this chapter's own site. Custom domain wins
+        over the subdomain; scheme/port derive from SITE_BASE_URL so dev
+        (http://localhost:8000) and prod (https://null.community) both
+        produce working links — used by notification emails."""
+        from urllib.parse import urlsplit
+
+        base = urlsplit(settings.SITE_BASE_URL)
+        port = f":{base.port}" if base.port else ""
+        if self.custom_domain:
+            return f"{base.scheme}://{self.custom_domain}{port}"
+        return f"{base.scheme}://{self.subdomain}.{settings.ROOT_DOMAIN}{port}"
 
     # --- ported from chapter.rb ---
     def has_twitter_handle(self):

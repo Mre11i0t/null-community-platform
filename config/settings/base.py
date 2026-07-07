@@ -60,7 +60,18 @@ MIDDLEWARE = [
     "csp.middleware.CSPMiddleware",
     "auditlog.middleware.AuditlogMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    "apps.chapters.middleware.ChapterSiteMiddleware",
 ]
+
+# Chapter-sites architecture (PRD Part 0): hostname whose subdomains are
+# chapter sites; the bare domain is the root/directory site. Hostname
+# only — no scheme, no port.
+ROOT_DOMAIN = env("ROOT_DOMAIN", default="localhost")
+
+# In prod, set SESSION_COOKIE_DOMAIN=.null.community (and the CSRF
+# equivalent) so one login works across every chapter subdomain.
+SESSION_COOKIE_DOMAIN = env("SESSION_COOKIE_DOMAIN", default=None)
+CSRF_COOKIE_DOMAIN = env("CSRF_COOKIE_DOMAIN", default=None)
 
 ROOT_URLCONF = "config.urls"
 
@@ -77,6 +88,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.site_config",
                 "apps.core.context_processors.nav_data",
+                "apps.chapters.context_processors.current_chapter",
             ],
         },
     },

@@ -3,10 +3,13 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.chapters import views as chapter_views
 from apps.events import views as event_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # Caddy on-demand-TLS gate — must stay cheap and unauthenticated.
+    path("domains/check", chapter_views.domain_check, name="domain_check"),
     path("accounts/", include("allauth.urls")),
     path("api-v2/", include("apps.api.urls")),
     path("chapters/", include("apps.chapters.urls")),
