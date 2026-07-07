@@ -63,6 +63,15 @@
             {{ form.visible }} My Registration is visible to all
           </label>
         </div>
+        {% for field in form %}
+          {% if field.name != "visible" and field.name != "captcha" %}
+            <div class="form-group{% if field.errors %} has-error{% endif %}">
+              <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+              {{ field }}
+              {% for error in field.errors %}<span class="help-block">{{ error }}</span>{% endfor %}
+            </div>
+          {% endif %}
+        {% endfor %}
         <div class="form-group">
           {{ form.captcha }}
         </div>

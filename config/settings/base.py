@@ -202,6 +202,12 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+# Rev 3 no-show strikes: an Absent registration is a strike; users at or
+# over the limit within the rolling window are temporarily blocked from
+# RSVPing. Set NO_SHOW_STRIKE_LIMIT=0 to disable blocking entirely.
+NO_SHOW_STRIKE_LIMIT = env.int("NO_SHOW_STRIKE_LIMIT", default=3)
+NO_SHOW_WINDOW_DAYS = env.int("NO_SHOW_WINDOW_DAYS", default=180)
+
 # reCAPTCHA — used on signup, RSVP, and session comments in the original app
 RECAPTCHA_PUBLIC_KEY = env("RECAPTCHA_PUBLIC_KEY", default="")
 RECAPTCHA_PRIVATE_KEY = env("RECAPTCHA_PRIVATE_KEY", default="")

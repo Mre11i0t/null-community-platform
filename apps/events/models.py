@@ -134,6 +134,13 @@ class Event(TimeStampedModel, SoftDeleteModel):
     auto_absent_enabled = models.BooleanField(default=False)
     auto_absent_processed_at = models.DateTimeField(null=True, blank=True)
 
+    # Rev 3 registration upgrades: leader-defined extra RSVP questions
+    # (list of {"label": str, "required": bool}) and how many hours
+    # before start_time a cancellation stops being free — cancelling
+    # inside the window counts as a no-show (Absent). 0 = cancel anytime.
+    custom_questions = models.JSONField(default=list, blank=True)
+    cancellation_deadline_hours = models.PositiveIntegerField(default=0, blank=True)
+
     objects = EventQuerySet.as_manager()
 
     class Meta:
@@ -163,10 +170,58 @@ class Event(TimeStampedModel, SoftDeleteModel):
     def has_registration_instructions(self):
         return bool(self.registration_instructions)
 
+    def active_registration_count(self):
+        """Seats actually consumed: Provisional + Confirmed. Waitlisted,
+        Not Attending, and Absent registrations don't hold a seat (the
+        original counted every row, which let cancellations permanently
+        eat capacity)."""
+        return self.event_registrations.filter(
+            state__in=[EventRegistration.STATE_PROVISIONAL, EventRegistration.STATE_CONFIRMED]
+        ).count()
+
     def registration_allowed(self):
         if self.max_registration and self.max_registration > 0:
-            return self.max_registration > self.event_registrations.count()
+            return self.max_registration > self.active_registration_count()
         return True
+
+    def promote_from_waitlist(self):
+        """Rev 3 waitlist auto-promotion: fill freed seats from the
+        waitlist in FIFO order and email each promoted member. Called
+        after any capacity-freeing change (cancellation, reject,
+        not-attending transition, cap increase). Promotion is direct
+        (no claim window) — events are free, so there's nothing for the
+        member to complete before the seat is theirs."""
+        promoted = []
+        while self.registration_allowed():
+            next_in_line = (
+                self.event_registrations.filter(state=EventRegistration.STATE_WAITLISTED)
+                .order_by("created_at")
+                .first()
+            )
+            if next_in_line is None:
+                break
+            next_in_line.state = EventRegistration.STATE_CONFIRMED
+            next_in_line.save(update_fields=["state", "updated_at"])
+            promoted.append(next_in_line)
+
+        if promoted:
+            from django.core.mail import send_mail
+
+            for registration in promoted:
+                send_mail(
+                    subject=f"[null] You're in — seat confirmed for {self.name}",
+                    message=(
+                        f"Good news! A seat opened up for {self.descriptive_name()} "
+                        f"and your waitlisted registration is now CONFIRMED.\n\n"
+                        f"Event page: {settings.SITE_BASE_URL}{self.get_absolute_url()}\n\n"
+                        f"If you can no longer attend, please cancel so the next "
+                        f"person on the waitlist gets the seat."
+                    ),
+                    from_email=None,
+                    recipient_list=[registration.user.email],
+                    fail_silently=True,
+                )
+        return promoted
 
     def registration_active(self):
         if not self.accepting_registration:
@@ -185,6 +240,15 @@ class Event(TimeStampedModel, SoftDeleteModel):
 
     def register_name(self):
         return "Register" if self.invite_only() else "RSVP"
+
+    def cancellation_deadline(self):
+        """Moment after which cancelling counts as a no-show; None when
+        the event allows cancelling anytime."""
+        if not self.cancellation_deadline_hours:
+            return None
+        from datetime import timedelta
+
+        return self.start_time - timedelta(hours=self.cancellation_deadline_hours)
 
     def image_url(self):
         return self.image.url if self.image else "/static/images/default_image.png"
@@ -315,12 +379,14 @@ class EventRegistration(TimeStampedModel):
     STATE_CONFIRMED = "Confirmed"
     STATE_NOT_ATTENDING = "Not Attending"
     STATE_ABSENT = "Absent"
+    STATE_WAITLISTED = "Waitlisted"  # Rev 3: event full, queued FIFO
 
     STATE_CHOICES = [
         (STATE_PROVISIONAL, STATE_PROVISIONAL),
         (STATE_CONFIRMED, STATE_CONFIRMED),
         (STATE_NOT_ATTENDING, STATE_NOT_ATTENDING),
         (STATE_ABSENT, STATE_ABSENT),
+        (STATE_WAITLISTED, STATE_WAITLISTED),
     ]
 
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="event_registrations")
@@ -335,6 +401,11 @@ class EventRegistration(TimeStampedModel):
     # and the moment attendance was recorded at the door.
     check_in_code = models.CharField(max_length=64, unique=True, null=True, blank=True)
     checked_in_at = models.DateTimeField(null=True, blank=True)
+
+    # Rev 3: answers to the event's custom registration questions
+    # ({label: answer}) and the lead's note from the approval queue.
+    custom_answers = models.JSONField(default=dict, blank=True)
+    review_note = models.CharField(max_length=255, blank=True)
 
     objects = EventRegistrationQuerySet.as_manager()
 
@@ -358,17 +429,28 @@ class EventRegistration(TimeStampedModel):
         """
         super().clean()
         if self._state.adding:
-            if not self.event.registration_allowed():
-                raise ValidationError("Registration is not allowed for this event (it is full).")
             if not self.event.registration_active():
                 raise ValidationError("Registration is not active for this event.")
+            # Rev 3: a full event no longer rejects — save() waitlists
+            # instead. But repeat no-shows are temporarily blocked.
+            if self.user_id and self.user.rsvp_blocked():
+                raise ValidationError(
+                    "Your RSVP is temporarily blocked after "
+                    f"{settings.NO_SHOW_STRIKE_LIMIT} recent no-shows. "
+                    "Attend or cancel in time to clear your record."
+                )
 
     def save(self, *args, **kwargs):
         """Ported from EventRegistration#set_default_state! (before_create):
         invite-only events start Provisional pending leader approval,
         open events are auto-Confirmed."""
         if self._state.adding and not self.state:
-            self.state = self.STATE_PROVISIONAL if self.event.invite_only() else self.STATE_CONFIRMED
+            if not self.event.registration_allowed():
+                self.state = self.STATE_WAITLISTED
+            elif self.event.invite_only():
+                self.state = self.STATE_PROVISIONAL
+            else:
+                self.state = self.STATE_CONFIRMED
         if not self.check_in_code:
             import secrets
 
@@ -385,10 +467,25 @@ class EventRegistration(TimeStampedModel):
                 self.state = self.STATE_CONFIRMED
             self.save(update_fields=["checked_in_at", "state", "updated_at"])
 
+    SEAT_HOLDING_STATES = (STATE_PROVISIONAL, STATE_CONFIRMED)
+
     def set_state(self, new_state):
         valid_states = dict(self.STATE_CHOICES)
         if new_state not in valid_states:
             raise ValueError("Invalid State")
         if self.state != new_state:
+            freed_seat = self.state in self.SEAT_HOLDING_STATES and new_state not in self.SEAT_HOLDING_STATES
             self.state = new_state
             self.save(update_fields=["state", "updated_at"])
+            if freed_seat:
+                self.event.promote_from_waitlist()
+
+    def waitlist_position(self):
+        if self.state != self.STATE_WAITLISTED:
+            return None
+        return (
+            self.event.event_registrations.filter(
+                state=self.STATE_WAITLISTED, created_at__lt=self.created_at
+            ).count()
+            + 1
+        )

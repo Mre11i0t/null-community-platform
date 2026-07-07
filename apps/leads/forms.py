@@ -6,7 +6,17 @@ from apps.notifications.models import EventMailerTask
 
 
 class LeadEventForm(forms.ModelForm):
-    """Ported from leads/events/_form.html.erb."""
+    """Ported from leads/events/_form.html.erb.
+
+    Rev 3: custom registration questions are edited as plain lines
+    ("T-shirt size *" — trailing * marks required) instead of raw JSON."""
+
+    custom_questions_text = forms.CharField(
+        label="Custom registration questions",
+        required=False,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+        help_text="One question per line. End a line with * to make it required.",
+    )
 
     class Meta:
         model = Event
@@ -30,6 +40,7 @@ class LeadEventForm(forms.ModelForm):
             "ready_for_reminders",
             "check_in_enabled",
             "auto_absent_enabled",
+            "cancellation_deadline_hours",
             "image",
         ]
         widgets = {
@@ -55,6 +66,31 @@ class LeadEventForm(forms.ModelForm):
         if user is not None:
             self.fields["chapter"].queryset = user.managed_chapters()
             self.fields["venue"].queryset = user.managed_venues()
+        if self.instance.pk and self.instance.custom_questions:
+            self.initial["custom_questions_text"] = "\n".join(
+                q["label"] + (" *" if q.get("required") else "")
+                for q in self.instance.custom_questions
+            )
+
+    def clean_cancellation_deadline_hours(self):
+        return self.cleaned_data.get("cancellation_deadline_hours") or 0
+
+    def clean_custom_questions_text(self):
+        questions = []
+        for line in self.cleaned_data.get("custom_questions_text", "").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            required = line.endswith("*")
+            questions.append({"label": line.rstrip("* ").strip(), "required": required})
+        return questions
+
+    def save(self, commit=True):
+        event = super().save(commit=False)
+        event.custom_questions = self.cleaned_data.get("custom_questions_text") or []
+        if commit:
+            event.save()
+        return event
 
 
 class LeadEventSessionForm(forms.ModelForm):

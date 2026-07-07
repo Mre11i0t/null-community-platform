@@ -147,7 +147,14 @@ def registration_new(request, event_id):
         form = EventRegistrationForm(request.POST, instance=blank_registration)
         if form.is_valid():
             registration = form.save()
-            messages.success(request, "You have successfully registered with the event.")
+            if registration.state == EventRegistration.STATE_WAITLISTED:
+                messages.info(
+                    request,
+                    f"This event is full — you are #{registration.waitlist_position()} on the "
+                    "waitlist. We'll email you the moment a seat opens up.",
+                )
+            else:
+                messages.success(request, "You have successfully registered with the event.")
             return redirect("events:detail", pk=event.pk)
     else:
         form = EventRegistrationForm(instance=blank_registration)
@@ -166,8 +173,22 @@ def registration_destroy(request, event_id, pk):
     event = get_object_or_404(Event, pk=event_id)
     registration = get_object_or_404(EventRegistration, pk=pk, event=event)
     if request.method == "POST" and registration.user_id == request.user.id:
-        registration.delete()
-        messages.success(request, "You have successfully unregistered with the event.")
+        deadline = event.cancellation_deadline()
+        held_seat = registration.state in EventRegistration.SEAT_HOLDING_STATES
+        if deadline and timezone.now() > deadline and held_seat:
+            # Rev 3: cancelling inside the deadline window counts as a
+            # no-show strike instead of silently freeing the seat.
+            registration.set_state(EventRegistration.STATE_ABSENT)
+            messages.warning(
+                request,
+                "The cancellation deadline has passed, so this counts as a "
+                "no-show on your record. The seat has been released to the waitlist.",
+            )
+        else:
+            registration.delete()
+            if held_seat:
+                event.promote_from_waitlist()
+            messages.success(request, "You have successfully unregistered with the event.")
     return redirect("events:detail", pk=event.pk)
 
 

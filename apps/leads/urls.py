@@ -22,6 +22,12 @@ urlpatterns = [
     path("events/<int:event_id>/sessions/<int:pk>/edit/", views.session_edit, name="session_edit"),
     path("events/<int:event_id>/sessions/<int:pk>/delete/", views.session_delete, name="session_delete"),
     path("events/<int:event_id>/registrations/", views.registration_index, name="registration_index"),
+    path("events/<int:event_id>/registrations/approval/", views.approval_queue, name="approval_queue"),
+    path(
+        "events/<int:event_id>/registrations/approval/<int:pk>/",
+        views.approval_decide,
+        name="approval_decide",
+    ),
     path(
         "events/<int:event_id>/registrations/export_csv/",
         views.registration_export_csv,

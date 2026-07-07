@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block page_title %}Approval queue — {{ event.name }}{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h1>Approval queue <small>{{ event.name }}</small></h1>
+      <p class="text-muted">{{ pending|length }} pending registration{{ pending|length|pluralize }} · seats used: {{ event.active_registration_count }}{% if event.max_registration %} / {{ event.max_registration }}{% endif %}</p>
+    </div>
+
+    {% if pending %}
+    <table class="table table-striped">
+      <thead>
+        <tr><th>Member</th><th>Requested</th><th>Answers</th><th width="40%">Decision</th></tr>
+      </thead>
+      <tbody>
+        {% for registration in pending %}
+        <tr>
+          <td>
+            <a href="{% url 'accounts:public_profile' registration.user.pk %}">{{ registration.user.name|default:registration.user.email }}</a><br>
+            <small class="text-muted">{{ registration.user.email }}</small>
+          </td>
+          <td>{{ registration.created_at|date:"M d, g:i A" }}</td>
+          <td>
+            {% for label, answer in registration.custom_answers.items %}
+              <small><strong>{{ label }}:</strong> {{ answer }}</small><br>
+            {% empty %}<small class="text-muted">—</small>{% endfor %}
+          </td>
+          <td>
+            <form method="post" action="{% url 'leads:approval_decide' event.pk registration.pk %}" class="form-inline">
+              {% csrf_token %}
+              <input type="text" name="note" class="form-control input-sm" placeholder="Optional note to member" maxlength="255">
+              <button type="submit" name="decision" value="approve" class="btn btn-sm btn-success">Approve</button>
+              <button type="submit" name="decision" value="reject" class="btn btn-sm btn-danger">Reject</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <div class="alert alert-success">Nothing pending — all registrations reviewed.</div>
+    {% endif %}
+    <a href="{% url 'leads:registration_index' event.pk %}">← All registrations</a>
+  </div>
+</div>
+{% endblock %}

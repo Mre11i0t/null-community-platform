@@ -88,7 +88,9 @@ def test_rsvp_creates_provisional_registration_for_invite_only_event(client):
     assert registration.state == EventRegistration.STATE_PROVISIONAL
 
 
-def test_rsvp_rejected_when_event_is_full(client):
+def test_rsvp_when_event_is_full_waitlists(client):
+    """Rev 3 behavior change: a full event queues the RSVP instead of
+    rejecting it (the pre-Rev-3 port re-rendered the form with an error)."""
     event = EventFactory(max_registration=1)
     EventRegistrationFactory(event=event)  # fills the only slot
     user = UserFactory()
@@ -99,9 +101,9 @@ def test_rsvp_rejected_when_event_is_full(client):
         {"visible": "on", "g-recaptcha-response": "PASSED"},
     )
 
-    assert response.status_code == 200  # re-renders the form with an error
-    assert not EventRegistration.objects.filter(event=event, user=user).exists()
-    assert response.context["form"].errors
+    assert response.status_code == 302
+    registration = EventRegistration.objects.get(event=event, user=user)
+    assert registration.state == EventRegistration.STATE_WAITLISTED
 
 
 def test_rsvp_rejected_outside_registration_window(client):
@@ -499,3 +501,157 @@ def test_auto_absent_only_when_both_flags_and_event_over():
 
     # idempotent — second run processes nothing
     assert auto_mark_absent() == 0
+
+
+# --- Rev 3 registration upgrades ---------------------------------------------
+
+
+def _open_event(**kwargs):
+    """Public event with an active registration window."""
+    defaults = dict(
+        public=True,
+        accepting_registration=True,
+        registration_start_time=timezone.now() - datetime.timedelta(days=1),
+        registration_end_time=timezone.now() + datetime.timedelta(days=1),
+        start_time=timezone.now() + datetime.timedelta(days=2),
+        end_time=timezone.now() + datetime.timedelta(days=2, hours=3),
+    )
+    defaults.update(kwargs)
+    return EventFactory(**defaults)
+
+
+def test_full_event_waitlists_instead_of_rejecting(client):
+    event = _open_event(max_registration=1)
+    EventRegistrationFactory(event=event)  # takes the only seat
+
+    user = UserFactory()
+    client.force_login(user)
+    response = client.post(
+        reverse("events:registration_new", args=[event.pk]),
+        {"visible": "on", "g-recaptcha-response": "PASSED"},
+    )
+    assert response.status_code == 302
+    registration = event.event_registrations.get(user=user)
+    assert registration.state == EventRegistration.STATE_WAITLISTED
+    assert registration.waitlist_position() == 1
+
+
+def test_waitlist_auto_promotes_fifo_and_emails(client):
+    from django.core import mail
+
+    event = _open_event(max_registration=1)
+    seat_holder = EventRegistrationFactory(event=event)
+    first = EventRegistrationFactory(event=event)   # waitlisted
+    second = EventRegistrationFactory(event=event)  # waitlisted
+    assert first.state == second.state == EventRegistration.STATE_WAITLISTED
+
+    mail.outbox.clear()
+    client.force_login(seat_holder.user)
+    client.post(reverse("events:registration_destroy", args=[event.pk, seat_holder.pk]))
+
+    first.refresh_from_db(); second.refresh_from_db()
+    assert first.state == EventRegistration.STATE_CONFIRMED   # FIFO
+    assert second.state == EventRegistration.STATE_WAITLISTED
+    assert len(mail.outbox) == 1 and first.user.email in mail.outbox[0].to
+
+
+def test_cancellation_after_deadline_counts_as_no_show(client):
+    event = _open_event(
+        cancellation_deadline_hours=72,  # deadline already passed (event in 2 days)
+        max_registration=0,
+    )
+    registration = EventRegistrationFactory(event=event)
+    assert registration.state == EventRegistration.STATE_CONFIRMED
+
+    client.force_login(registration.user)
+    client.post(reverse("events:registration_destroy", args=[event.pk, registration.pk]))
+
+    registration.refresh_from_db()
+    assert registration.state == EventRegistration.STATE_ABSENT  # strike, not delete
+
+
+def test_rsvp_blocked_after_strike_limit(client, settings):
+    settings.NO_SHOW_STRIKE_LIMIT = 2
+    user = UserFactory()
+    for _ in range(2):
+        past = EventFactory(
+            public=True,
+            start_time=timezone.now() - datetime.timedelta(days=10),
+            end_time=timezone.now() - datetime.timedelta(days=10, hours=-2),
+        )
+        registration = EventRegistrationFactory(event=past, user=user)
+        registration.set_state(EventRegistration.STATE_ABSENT)
+
+    assert user.rsvp_blocked()
+    event = _open_event()
+    client.force_login(user)
+    response = client.post(
+        reverse("events:registration_new", args=[event.pk]),
+        {"visible": "on", "g-recaptcha-response": "PASSED"},
+    )
+    assert response.status_code == 200  # re-renders with error
+    assert not event.event_registrations.filter(user=user).exists()
+    assert "temporarily blocked" in response.content.decode()
+
+
+def test_custom_questions_collected_at_rsvp_and_required_enforced(client):
+    event = _open_event(
+        custom_questions=[
+            {"label": "T-shirt size", "required": True},
+            {"label": "Dietary needs", "required": False},
+        ]
+    )
+    user = UserFactory()
+    client.force_login(user)
+    url = reverse("events:registration_new", args=[event.pk])
+
+    # missing required answer re-renders
+    response = client.post(url, {"visible": "on", "g-recaptcha-response": "PASSED"})
+    assert response.status_code == 200
+    assert not event.event_registrations.filter(user=user).exists()
+
+    response = client.post(
+        url,
+        {
+            "visible": "on",
+            "g-recaptcha-response": "PASSED",
+            "custom_q_0": "XL",
+            "custom_q_1": "",
+        },
+    )
+    assert response.status_code == 302
+    registration = event.event_registrations.get(user=user)
+    assert registration.custom_answers == {"T-shirt size": "XL", "Dietary needs": ""}
+
+
+def test_approval_queue_approve_and_reject(client):
+    from django.core import mail
+
+    from tests.factories import ChapterLeadFactory, EventTypeFactory
+
+    invite_type = EventTypeFactory(name="Invite Workshop", invitation_required=True)
+    event = _open_event(event_type=invite_type)
+    approve_me = EventRegistrationFactory(event=event)
+    reject_me = EventRegistrationFactory(event=event)
+    assert approve_me.state == EventRegistration.STATE_PROVISIONAL
+
+    lead = ChapterLeadFactory(chapter=event.chapter)
+    client.force_login(lead.user)
+
+    response = client.get(reverse("leads:approval_queue", args=[event.pk]))
+    assert approve_me in response.context["pending"] and reject_me in response.context["pending"]
+
+    mail.outbox.clear()
+    client.post(
+        reverse("leads:approval_decide", args=[event.pk, approve_me.pk]), {"decision": "approve"}
+    )
+    client.post(
+        reverse("leads:approval_decide", args=[event.pk, reject_me.pk]),
+        {"decision": "reject", "note": "Full house this time"},
+    )
+
+    approve_me.refresh_from_db(); reject_me.refresh_from_db()
+    assert approve_me.state == EventRegistration.STATE_CONFIRMED
+    assert reject_me.state == EventRegistration.STATE_NOT_ATTENDING
+    assert reject_me.review_note == "Full house this time"
+    assert len(mail.outbox) == 2

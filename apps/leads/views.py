@@ -1,6 +1,7 @@
 import csv
 import json
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -269,9 +270,13 @@ def registration_export_csv(request, event_id):
     response = HttpResponse(content_type="text/csv")
     response["Content-Disposition"] = f"attachment; filename=event_{event.pk}_registrations.csv"
     writer = csv.writer(response)
-    writer.writerow(["#", "Name", "Email", "Registered On", "State"])
+    question_labels = [q["label"] for q in event.custom_questions]
+    writer.writerow(["#", "Name", "Email", "Registered On", "State", "Checked In At"] + question_labels)
     for reg in event.event_registrations.select_related("user"):
-        writer.writerow([reg.pk, reg.user.name, reg.user.email, reg.created_at, reg.state])
+        writer.writerow(
+            [reg.pk, reg.user.name, reg.user.email, reg.created_at, reg.state, reg.checked_in_at or ""]
+            + [reg.custom_answers.get(label, "") for label in question_labels]
+        )
     return response
 
 
@@ -523,3 +528,64 @@ def kiosk(request, event_id, token):
         "leads/check_in/kiosk.html",
         {"event": event, "q": q, "results": results, "token": token},
     )
+
+
+# --- Approval queue (Rev 3 — closes gap #3) ----------------------------------
+
+
+@require_leader
+def approval_queue(request, event_id):
+    """Dedicated review UI for provisional RSVPs on invite-only events —
+    replaces abusing the generic mass-update flow (original gap #3).
+    Shows each pending registration with its custom-question answers."""
+    event = _load_authorized_event(request, event_id)
+    pending = (
+        event.event_registrations.filter(state=EventRegistration.STATE_PROVISIONAL)
+        .select_related("user")
+        .order_by("created_at")
+    )
+    return render(
+        request,
+        "leads/event_registrations/approval_queue.html",
+        {"event": event, "pending": pending},
+    )
+
+
+@require_leader
+@require_POST
+def approval_decide(request, event_id, pk):
+    from django.core.mail import send_mail
+
+    event = _load_authorized_event(request, event_id)
+    registration = get_object_or_404(
+        EventRegistration, pk=pk, event=event, state=EventRegistration.STATE_PROVISIONAL
+    )
+    decision = request.POST.get("decision")
+    note = (request.POST.get("note") or "").strip()[:255]
+
+    if decision == "approve":
+        registration.review_note = note
+        registration.save(update_fields=["review_note", "updated_at"])
+        registration.set_state(EventRegistration.STATE_CONFIRMED)
+        subject = f"[null] Registration confirmed — {event.name}"
+        body = (
+            f"Your registration for {event.descriptive_name()} has been approved.\n\n"
+            f"See you there! Event details: {settings.SITE_BASE_URL}{event.get_absolute_url()}"
+        )
+        messages.success(request, f"{registration.user} confirmed.")
+    elif decision == "reject":
+        registration.review_note = note
+        registration.save(update_fields=["review_note", "updated_at"])
+        registration.set_state(EventRegistration.STATE_NOT_ATTENDING)
+        subject = f"[null] Registration update — {event.name}"
+        body = (
+            f"Unfortunately your registration for {event.descriptive_name()} was not "
+            f"approved this time." + (f"\n\nNote from the organizers: {note}" if note else "")
+        )
+        messages.info(request, f"{registration.user} rejected.")
+    else:
+        messages.error(request, "Unknown decision.")
+        return redirect("leads:approval_queue", event_id=event.pk)
+
+    send_mail(subject, body, None, [registration.user.email], fail_silently=True)
+    return redirect("leads:approval_queue", event_id=event.pk)

@@ -133,6 +133,26 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     def speaker_sessions(self):
         return self.event_sessions.filter(placeholder=False, deleted_at__isnull=True).order_by("-created_at")
 
+    def no_show_strikes(self):
+        """Rev 3: Absent registrations inside the rolling strike window."""
+        from datetime import timedelta
+
+        from django.conf import settings
+        from django.utils import timezone
+
+        from apps.events.models import EventRegistration
+
+        window_start = timezone.now() - timedelta(days=settings.NO_SHOW_WINDOW_DAYS)
+        return self.event_registrations.filter(
+            state=EventRegistration.STATE_ABSENT, event__end_time__gte=window_start
+        ).count()
+
+    def rsvp_blocked(self):
+        from django.conf import settings
+
+        limit = settings.NO_SHOW_STRIKE_LIMIT
+        return limit > 0 and self.no_show_strikes() >= limit
+
     def registered_participation(self):
         from django.db.models import Q
 
