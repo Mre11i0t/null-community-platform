@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.notifications",
     "apps.leads",
     "apps.api",
+    "apps.analytics",
 ]
 
 MIDDLEWARE = [
@@ -61,6 +62,7 @@ MIDDLEWARE = [
     "auditlog.middleware.AuditlogMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "apps.chapters.middleware.ChapterSiteMiddleware",
+    "apps.analytics.middleware.PageVisitMiddleware",
 ]
 
 # Chapter-sites architecture (PRD Part 0): hostname whose subdomains are
@@ -185,6 +187,8 @@ SPECTACULAR_SETTINGS = {
 CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = "django-db"
 CELERY_TIMEZONE = TIME_ZONE
+from celery.schedules import crontab  # noqa: E402
+
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # Periodic sweep replacing Resque Scheduler's one-shot delayed jobs — ports
 # Event's notification_state machine (see apps/notifications/tasks.py
@@ -199,6 +203,11 @@ CELERY_BEAT_SCHEDULE = {
     "auto-mark-absent": {
         "task": "apps.events.tasks.auto_mark_absent",
         "schedule": 900.0,
+    },
+    # 1st of every month, 09:00 IST
+    "monthly-chapter-reports": {
+        "task": "apps.analytics.tasks.send_monthly_chapter_reports",
+        "schedule": crontab(minute=0, hour=9, day_of_month=1),
     },
 }
 

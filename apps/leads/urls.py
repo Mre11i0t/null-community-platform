@@ -1,5 +1,7 @@
 from django.urls import path
 
+from apps.analytics import views as analytics_views
+
 from . import views
 
 app_name = "leads"
@@ -53,6 +55,7 @@ urlpatterns = [
     path("proposals/", views.proposal_index, name="proposal_index"),
     path("proposals/<int:pk>/", views.proposal_review, name="proposal_review"),
     path("speakers/search/", views.speaker_search, name="speaker_search"),
+    path("analytics/", analytics_views.dashboard, name="analytics_dashboard"),
     path("chapters/", views.chapter_index, name="chapter_index"),
     path("chapters/<int:pk>/edit/", views.chapter_edit, name="chapter_edit"),
 ]

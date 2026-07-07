@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block page_title %}Chapter analytics{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h1>Chapter analytics
+        <small>
+          last
+          <a href="?days=7">7</a> ·
+          <a href="?days=30">30</a> ·
+          <a href="?days=90">90</a> days
+          (showing {{ days }})
+        </small>
+      </h1>
+    </div>
+  </div>
+</div>
+
+{% if traffic_by_host %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading"><strong>Traffic by domain</strong> (all sites, staff only)</div>
+      <table class="table table-condensed">
+        {% for row in traffic_by_host %}
+          <tr><td>{{ row.host }}</td><td class="text-right">{{ row.hits }}</td></tr>
+        {% empty %}<tr><td>No visits recorded yet.</td></tr>{% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% for card in chapter_cards %}
+<div class="row">
+  <div class="col-md-12"><h2>{{ card.chapter.name }} <small>{{ card.traffic }} page views in {{ days }} days</small></h2></div>
+  <div class="col-md-4">
+    <div class="panel panel-default">
+      <div class="panel-heading">Where visitors come from</div>
+      <table class="table table-condensed">
+        {% for row in card.referrers %}
+          <tr><td>{{ row.referrer_domain }}</td><td class="text-right">{{ row.hits }}</td></tr>
+        {% empty %}<tr><td class="text-muted">Direct traffic only so far.</td></tr>{% endfor %}
+      </table>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">Chapter health (12 months)</div>
+      <table class="table table-condensed">
+        <tr><td>Events</td><td class="text-right">{{ card.health.events }}</td></tr>
+        <tr><td>Registrations</td><td class="text-right">{{ card.health.registrations }}</td></tr>
+        <tr><td>Unique attendees</td><td class="text-right">{{ card.health.unique_attendees }}</td></tr>
+        <tr><td>Repeat-attendee rate</td><td class="text-right">{{ card.health.repeat_rate }}%</td></tr>
+        <tr><td>New members</td><td class="text-right">{{ card.health.new_members }}</td></tr>
+      </table>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">Speakers (12 months)</div>
+      <table class="table table-condensed">
+        <tr><td>Sessions</td><td class="text-right">{{ card.speakers.sessions }}</td></tr>
+        <tr><td>Speakers</td><td class="text-right">{{ card.speakers.speakers }}</td></tr>
+        <tr><td>First-time speakers</td><td class="text-right">{{ card.speakers.first_time_speakers }}</td></tr>
+        <tr><td>Past sessions missing slides</td><td class="text-right">{{ card.speakers.missing_slides }}</td></tr>
+        <tr><td>Past sessions missing video</td><td class="text-right">{{ card.speakers.missing_video }}</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="panel panel-default">
+      <div class="panel-heading">Attendance funnel — recent events</div>
+      <table class="table table-condensed">
+        <thead><tr><th>Event</th><th class="text-right">Registered</th><th class="text-right">Confirmed</th><th class="text-right">Checked in</th></tr></thead>
+        <tbody>
+        {% for funnel in card.funnels %}
+          <tr>
+            <td><a href="{% url 'leads:event_show' funnel.event.pk %}">{{ funnel.event.name|truncatechars:40 }}</a>
+                <small class="text-muted">{{ funnel.event.start_time|date:"M d" }}</small></td>
+            <td class="text-right">{{ funnel.registered }}</td>
+            <td class="text-right">{{ funnel.confirmed }}</td>
+            <td class="text-right">{% if funnel.event.check_in_enabled %}{{ funnel.checked_in }}{% else %}<span class="text-muted">off</span>{% endif %}</td>
+          </tr>
+        {% empty %}<tr><td colspan="4">No events yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
