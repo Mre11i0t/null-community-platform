@@ -15,7 +15,11 @@
   {% for chapter in chapters %}
     <div class="chapter-card {% if chapter.active %}chapter-active{% else %}chapter-inactive{% endif %}">
       <div class="chapter-img-container">
-        <img loading="lazy" decoding="async" src="{{ chapter.image_url }}" alt="{{ chapter.name }}" class="chapter-img">
+        {% if chapter.image %}
+          <img loading="lazy" decoding="async" src="{{ chapter.image.url }}" alt="{{ chapter.name }}" class="chapter-img">
+        {% else %}
+          <div class="chapter-img chapter-monogram">{{ chapter.name|first }}</div>
+        {% endif %}
       </div>
       <div class="chapter-status">{% if chapter.active %}Active{% else %}Inactive{% endif %}</div>
       <div class="card-body">

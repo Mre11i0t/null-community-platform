@@ -51,3 +51,12 @@ u { text-decoration: none; }
     scroll-behavior: auto !important;
   }
 }
+
+/* Image-less chapters: neutral monogram instead of the broken-image
+   placeholder graphic (chapters with real images are unaffected). */
+.chapter-monogram {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 180px;
+  background: #333333; color: #ffffff;
+  font-size: 64px; font-weight: 300;
+}
