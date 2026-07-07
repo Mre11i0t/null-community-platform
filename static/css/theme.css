@@ -1,261 +1,53 @@
 /* ============================================================
-   null.community — Rev 4 theme layer
-   Loaded AFTER bootstrap-yeti + custom.css: restyles the existing
-   Bootstrap 3 markup into a modern look. One file, token-driven.
+   null.community — polish layer (Rev 4, minimal edition)
+   Loaded AFTER bootstrap-yeti + custom.css.
+   Deliberately does NOT touch typography, colors, or component
+   styling — the Yeti look is the design. This file only fixes
+   spacing/layout problems and adds small utilities.
    ============================================================ */
 
-:root {
-  --ink: #222222;          /* Yeti text ink */
-  --ink-2: #3a3a3a;      /* Yeti navbar hover */
-  --body: #222222;
-  --muted: #888888;      /* Yeti muted gray */
-  --line: #e6e8ec;
-  --surface: #ffffff;      /* Yeti page background (white) */
-  --card: #ffffff;
-  --red: #F04124;          /* Yeti danger */
-  --red-dark: #d32a0e;
-  --green: #43ac6a;      /* Yeti success */
-  --amber: #b7791f;
-  --blue: #008cba;       /* Yeti primary */
-  --radius: 10px;
-  --radius-sm: 8px;
-  --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .08);
-  --shadow-lg: 0 4px 6px -2px rgba(16, 24, 40, .05), 0 10px 24px -4px rgba(16, 24, 40, .10);
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+html { -webkit-font-smoothing: antialiased; }
+
+/* fixed navbar wraps to two rows between sm and md — pad for it
+   (base body padding-top: 50px lives in custom.css) */
+@media (min-width: 768px) and (max-width: 991px) { body { padding-top: 100px; } }
+
+/* Big button clusters: wrapped rows need breathing room. */
+.btn-cluster .btn { margin: 4px 6px; }
+
+/* Section headings between rows. */
+.section-title { margin: 32px 0 20px; }
+
+/* Equal-height card rows (md and up): panels stretch to match, the
+   last action button pins to the bottom instead of min-height hacks. */
+@media (min-width: 768px) {
+  .row-flex { display: flex; flex-wrap: wrap; }
+  .row-flex > [class*="col-"] { display: flex; }
+  .row-flex .panel { display: flex; flex-direction: column; width: 100%; }
+  .row-flex .panel-body { display: flex; flex-direction: column; flex: 1; }
+  .row-flex .panel-body .btn:last-child,
+  .row-flex .panel-body .panel-cta { margin-top: auto; }
 }
+.row-flex .panel-body p { flex: 0 1 auto; }
 
-/* ---------- base ---------- */
-html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
-body {
-  font-family: var(--font);
-  font-size: 15px;
-  line-height: 1.65;
-  color: var(--body);
-  background: var(--surface);
-  padding-top: 62px; /* fixed navbar height */
+/* Stat panels: h1 inside a small panel shouldn't carry page margins. */
+.stat-panel .panel-body h1 { margin: 8px 0; }
+
+/* Comfortable table cells (padding only — no visual restyle). */
+.table > tbody > tr > td { vertical-align: middle; }
+.text-nowrap { white-space: nowrap; }
+u { text-decoration: none; }
+
+/* Consistent panel spacing rhythm. */
+.panel { margin-bottom: 22px; }
+.page-header { margin-top: 30px; }
+
+/* Respect users who turn off animation at the OS level. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
-h1, h2, h3, h4, h5 {
-  font-family: var(--font);
-  color: var(--ink);
-  font-weight: 700;
-  letter-spacing: -0.015em;
-}
-h1 { font-size: 32px; }
-h2 { font-size: 26px; }
-h3 { font-size: 21px; }
-h1 small, h2 small, h3 small { font-weight: 500; color: var(--muted); font-size: 60%; }
-a { color: #008cba; }
-a:hover, a:focus { color: #006687; text-decoration: none; }
-code { font-family: var(--mono); background: #eef0f3; color: var(--ink); border-radius: 5px; padding: 2px 6px; font-size: 86%; }
-hr { border-top-color: var(--line); }
-.page-header { border-bottom: 1px solid var(--line); padding-bottom: 14px; margin: 34px 0 24px; }
-.text-muted { color: var(--muted) !important; }
-.lead { color: var(--muted); font-weight: 400; }
-
-/* ---------- navbar ---------- */
-.navbar-default {
-  background: #333333;   /* Yeti navbar */
-  border: 0;
-  min-height: 62px;
-  box-shadow: 0 1px 12px rgba(0, 0, 0, .18);
-}
-.navbar-default .navbar-brand {
-  color: #fff;
-  font-family: var(--mono);
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: .02em;
-  height: 62px;
-  line-height: 30px;
-}
-.navbar-default .navbar-brand:hover { color: #ffffff; }
-.navbar-default .navbar-nav > li > a {
-  color: #b7bcc5;
-  font-weight: 500;
-  font-size: 14px;
-  height: 62px;
-  line-height: 30px;
-  transition: color .15s ease;
-}
-.navbar-default .navbar-nav > li > a:hover,
-.navbar-default .navbar-nav > li > a:focus { color: #fff; background: transparent; }
-.navbar-default .navbar-nav > .open > a,
-.navbar-default .navbar-nav > .open > a:hover,
-.navbar-default .navbar-nav > .open > a:focus { background: var(--ink-2); color: #fff; }
-.navbar-default .navbar-toggle { border: 0; margin-top: 14px; }
-.navbar-default .navbar-toggle .icon-bar { background: #fff; }
-.navbar-default .navbar-toggle:hover, .navbar-default .navbar-toggle:focus { background: var(--ink-2); }
-.dropdown-menu {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-lg);
-  padding: 6px;
-}
-.dropdown-menu > li > a { border-radius: 6px; padding: 8px 12px; color: var(--body); }
-.dropdown-menu > li > a:hover { background: var(--surface); color: var(--ink); }
-
-/* ---------- announcement bar ---------- */
-
-
-/* ---------- hero / jumbotron ---------- */
-.jumbotron {
-  background: #fafafa;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 44px 24px 30px;
-  margin-bottom: 20px;
-}
-.jumbotron h1 {
-  font-size: 44px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  margin-bottom: 10px;
-}
-.jumbotron h1 small { display: inline-block; margin-top: 10px; font-size: 45%; font-weight: 500; color: var(--muted); letter-spacing: 0; }
-.jumbotron p { font-size: 16px; color: var(--muted); max-width: 76ch; margin-left: auto; margin-right: auto; }
-.jumbotron .text-justify { text-align: center; }
-
-/* ---------- buttons ---------- */
-.btn {
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  border: 1px solid transparent;
-  transition: all .15s ease;
-  box-shadow: 0 1px 1px rgba(16, 24, 40, .04);
-}
-.btn:active { box-shadow: none; }
-.btn-lg { padding: 12px 22px; font-size: 16px; border-radius: var(--radius); }
-.btn-sm, .btn-xs { border-radius: 7px; }
-.btn-primary { background: #008cba; border-color: #008cba; }
-.btn-primary:hover, .btn-primary:focus { background: #007ba3; border-color: #007ba3; }
-.btn-danger { background: var(--red); border-color: var(--red); }
-.btn-danger:hover, .btn-danger:focus { background: var(--red-dark); border-color: var(--red-dark); }
-.btn-success { background: var(--green); border-color: var(--green); }
-.btn-success:hover, .btn-success:focus { background: #3a9a5e; border-color: #3a9a5e; }
-.btn-warning { background: #E99002; border-color: #E99002; }
-.btn-default {
-  background: var(--card);
-  border-color: var(--line);
-  color: var(--ink);
-}
-.btn-default:hover, .btn-default:focus { background: var(--surface); border-color: #d3d7de; color: var(--ink); }
-.btn-link { box-shadow: none; }
-
-/* ---------- panels → cards ---------- */
-.panel {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  margin-bottom: 24px;
-  overflow: hidden;
-}
-.panel-heading { font-weight: 700; padding: 13px 18px; }
-.panel-default > .panel-heading { background: #fafafa; color: var(--ink); border-color: var(--line); }
-.panel-heading .panel-title { font-weight: 700; font-size: 15px; }
-.panel-body { padding: 18px; }
-.panel-primary, .panel-info, .panel-success, .panel-default, .panel-danger { border-color: var(--line); }
-a .panel:hover, .panel-clickable:hover { box-shadow: var(--shadow-lg); }
-
-/* stat panels on the homepages */
-.stat-panel .panel-body h1 { font-size: 40px; font-weight: 800; color: var(--ink); }
-
-/* ---------- tables ---------- */
-.table { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-.table > thead > tr > th {
-  border-bottom: 1px solid var(--line);
-  background: #fafbfc;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .05em;
-  padding: 12px 14px;
-}
-.table > tbody > tr > td, .table > tbody > tr > th { padding: 12px 14px; border-top: 1px solid var(--line); vertical-align: middle; }
-.table-striped > tbody > tr:nth-of-type(odd) { background: #fafbfc; }
-.table-bordered, .table-bordered > tbody > tr > td, .table-bordered > tbody > tr > th { border-color: var(--line); }
-.table-condensed > tbody > tr > td { padding: 9px 14px; }
-
-/* ---------- forms ---------- */
-.form-control {
-  height: 42px;
-  border-radius: var(--radius-sm);
-  border-color: #d3d7de;
-  box-shadow: none;
-  font-size: 15px;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-textarea.form-control { height: auto; }
-.form-control:focus {
-  border-color: #008cba;
-  box-shadow: 0 0 0 3px rgba(0, 140, 186, .18);
-}
-label { color: var(--ink); font-weight: 600; }
-.help-block { color: var(--muted); }
-.input-group-lg > .form-control { border-radius: var(--radius-sm); }
-
-/* ---------- labels / badges ---------- */
-.label {
-  border-radius: 999px;
-  font-weight: 600;
-  padding: .25em .75em;
-  font-size: 11.5px;
-}
-.label-success { background: #43ac6a; }
-.label-danger { background: #F04124; }
-.label-info { background: #5bc0de; }
-.label-warning { background: #E99002; }
-.label-primary { background: #008cba; }
-.label-default { background: #888888; }
-
-/* ---------- alerts ---------- */
-.alert { border-radius: var(--radius-sm); border: 1px solid transparent; }
-.alert-success { background: #43ac6a; border-color: #3c9a5f; color: #fff; }
-.alert-danger { background: #F04124; border-color: #ea2f0f; color: #fff; }
-.alert-info { background: #5bc0de; border-color: #3db5d8; color: #fff; }
-.alert-warning { background: #E99002; border-color: #d08002; color: #fff; }
-.alert a, .alert .alert-link { color: #fff; text-decoration: underline; }
-
-/* ---------- misc components ---------- */
-.nav-pills > li > a { border-radius: 999px; color: var(--muted); font-weight: 600; padding: 7px 16px; }
-.nav-pills > li.active > a, .nav-pills > li.active > a:hover { background: #008cba; }
-.pager li > a, .pagination > li > a { border-radius: var(--radius-sm); border-color: var(--line); color: var(--ink); font-weight: 600; }
-.breadcrumb { background: transparent; padding-left: 0; }
-.well { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
-blockquote { border-left: 3px solid #008cba; color: var(--body); }
-.bs-callout, .bs-callout-info2 {
-  background: var(--card);
-  border: 1px solid var(--line) !important;
-  border-left: 4px solid #008cba !important;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 18px;
-}
-.thumbnail { border-color: var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
-
-/* ---------- footer ---------- */
-footer, .footer, #footer {
-  background: #fff;
-  color: var(--muted);
-  margin-top: 56px;
-  padding: 32px 0 26px;
-  border-top: 1px solid var(--line);
-}
-
-/* ---------- landing helpers (extends earlier fixes) ---------- */
-.section-title { font-weight: 800; letter-spacing: -0.02em; }
-.btn-cluster .btn { margin: 5px 7px; }
-#main-content > .container, #main-content.container { padding-top: 8px; }
-
-/* keep the old inline color helpers on-brand */
-.red { color: #d9534f; }
-
-/* announcement alert: heading inherits the tint color */
-.alert h4 { color: inherit; font-size: 15px; font-weight: 600; margin: 0; padding-right: 18px; }
-.alert .close { color: inherit; opacity: .5; text-shadow: none; }
-
-/* fixed navbar wraps to two rows between sm and md — pad for it */
-@media (min-width: 768px) and (max-width: 991px) { body { padding-top: 118px; } }
-
-

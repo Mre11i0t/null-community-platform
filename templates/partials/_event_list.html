@@ -12,7 +12,7 @@
     <tbody>
       {% for event in events %}
       <tr>
-        <td><strong><u>{{ event.start_time|date:"Y-m-d" }}</u></strong></td>
+        <td class="text-nowrap"><strong>{{ event.start_time|date:"M d, Y" }}</strong></td>
         <td><span class="label label-info">{{ event.event_type.name }}</span></td>
         <td>
           <a href="{% url 'events:detail' event.pk %}" style="text-decoration:none">
