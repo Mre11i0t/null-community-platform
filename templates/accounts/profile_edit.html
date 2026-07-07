@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block page_title %}Edit profile — null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <div class="page-header"><h1>Edit profile</h1></div>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% for field in form %}
+        <div class="form-group{% if field.errors %} has-error{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}<span class="help-block">{{ error }}</span>{% endfor %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Save profile</button>
+      <a href="{% url 'accounts:public_profile' user.pk %}" class="btn btn-default">View public profile</a>
+    </form>
+    <hr>
+    <p>
+      <a href="{% url 'accounts:notification_preferences' %}">Notification preferences</a> ·
+      <a href="{% url 'accounts:export_data' %}">Download my data</a> ·
+      <a href="{% url 'accounts:delete_account' %}" class="text-danger">Delete account</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

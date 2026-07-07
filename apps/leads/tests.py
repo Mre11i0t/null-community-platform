@@ -517,3 +517,41 @@ def test_mailer_task_index_show_new_edit(client, lead_and_chapter):
     # editing forces ready_for_delivery back to False regardless of what was posted,
     # to prevent an edit accidentally re-triggering delivery.
     assert task.ready_for_delivery is False
+
+
+def test_lead_publish_toggle_fires_published_webhook(client, monkeypatch):
+    import datetime as dt
+
+    from django.utils import timezone as tz
+
+    from apps.notifications.models import WebhookEndpoint
+    from tests.factories import ChapterLeadFactory, EventFactory
+
+    calls = []
+    import requests
+
+    class FakeResponse:
+        status_code = 200
+        text = "ok"
+
+    monkeypatch.setattr(
+        requests, "post", lambda *a, **kw: calls.append(kw.get("headers", {})) or FakeResponse()
+    )
+
+    event = EventFactory(
+        public=False,
+        start_time=tz.now() + dt.timedelta(days=5),
+        end_time=tz.now() + dt.timedelta(days=5, hours=2),
+    )
+    WebhookEndpoint.objects.create(chapter=event.chapter, url="https://example.com/hook")
+    lead = ChapterLeadFactory(chapter=event.chapter)
+    client.force_login(lead.user)
+
+    client.post(reverse("leads:event_publish", args=[event.pk]))
+    event.refresh_from_db()
+    assert event.public is True
+    assert any(h.get("X-Null-Event") == "event.published" for h in calls)
+
+    client.post(reverse("leads:event_publish", args=[event.pk]))
+    event.refresh_from_db()
+    assert event.public is False

@@ -266,6 +266,13 @@ SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 # Rev 3 email delivery: Mailgun via django-anymail when a key is present
 # (Basic $15/mo · 10k emails covers current volume; see PRD Part 6),
 # otherwise whatever EMAIL_BACKEND the environment set (console in dev).
+# Rev 3: sentry-sdk replaces the deprecated sentry-raven gem — env-gated.
+SENTRY_DSN = env("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    import sentry_sdk
+
+    sentry_sdk.init(dsn=SENTRY_DSN, traces_sample_rate=0.1, send_default_pii=False)
+
 MAILGUN_API_KEY = env("MAILGUN_API_KEY", default="")
 if MAILGUN_API_KEY:
     INSTALLED_APPS.append("anymail")

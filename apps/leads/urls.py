@@ -17,6 +17,7 @@ urlpatterns = [
     path("events/<int:pk>/", views.event_show, name="event_show"),
     path("events/<int:pk>/edit/", views.event_edit, name="event_edit"),
     path("events/<int:pk>/delete/", views.event_delete, name="event_delete"),
+    path("events/<int:pk>/publish/", views.event_publish, name="event_publish"),
     path("events/<int:event_id>/sessions/", views.session_index, name="session_index"),
     path("events/<int:event_id>/sessions/new/", views.session_new, name="session_new"),
     path("events/<int:event_id>/sessions/suggest_user/", views.session_suggest_user, name="session_suggest_user"),

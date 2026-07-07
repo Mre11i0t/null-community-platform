@@ -199,3 +199,52 @@ def add_achievement(request):
     from apps.proposals.models import UserAchievement as UA
 
     return _render(request, "accounts/add_achievement.html", {"types": UA.TYPE_CHOICES})
+
+
+@login_required
+def profile_edit(request):
+    """Ports the original's Devise-registrations profile edit (2.2):
+    name, handle, bio, homepage, avatar, and social links."""
+    from django import forms as dj_forms
+    from django.contrib import messages
+
+    class ProfileForm(dj_forms.ModelForm):
+        class Meta:
+            model = User
+            fields = [
+                "name", "handle", "about_me", "homepage", "avatar",
+                "twitter_handle", "facebook_profile", "linkedin_profile",
+                "slideshare_profile", "github_profile",
+            ]
+            widgets = {
+                field: dj_forms.TextInput(attrs={"class": "form-control"})
+                for field in ("name", "handle", "homepage", "twitter_handle",
+                              "facebook_profile", "linkedin_profile",
+                              "slideshare_profile", "github_profile")
+            } | {"about_me": dj_forms.Textarea(attrs={"class": "form-control", "rows": 4})}
+
+    if request.method == "POST":
+        form = ProfileForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile updated.")
+            from django.shortcuts import redirect
+
+            return redirect("accounts:public_profile", pk=request.user.pk)
+    else:
+        form = ProfileForm(instance=request.user)
+    return render(request, "accounts/profile_edit.html", {"form": form})
+
+
+@login_required
+def my_rsvps(request):
+    """Ports 'View My RSVPs' (2.3): every registration with its state."""
+    registrations = (
+        request.user.event_registrations.select_related("event", "event__chapter")
+        .order_by("-event__start_time")
+    )
+    from django.utils import timezone
+
+    return render(
+        request, "accounts/my_rsvps.html", {"registrations": registrations, "now": timezone.now()}
+    )

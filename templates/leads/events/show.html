@@ -31,6 +31,15 @@
         <a href="{% url 'leads:registration_index' event.pk %}">{{ event.event_registrations.count }}</a>
         &nbsp;<a href="{% url 'leads:approval_queue' event.pk %}" class="btn btn-xs btn-default">Approval queue</a>
       </td></tr>
+      <tr><th>Visibility</th><td>
+        {% if event.public %}<span class="label label-success">Published</span>{% else %}<span class="label label-warning">Unpublished</span>{% endif %}
+        <form method="post" action="{% url 'leads:event_publish' event.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-xs {% if event.public %}btn-warning{% else %}btn-success{% endif %}">
+            {% if event.public %}Unpublish{% else %}Publish{% endif %}
+          </button>
+        </form>
+      </td></tr>
       {% if event.check_in_enabled %}
       <tr><th>Check-in</th><td>
         <a href="{% url 'leads:check_in_dashboard' event.pk %}" class="btn btn-sm btn-primary"><i class="fa fa-qrcode"></i> Check-in dashboard</a>

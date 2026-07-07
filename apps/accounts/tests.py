@@ -195,3 +195,35 @@ def test_2fa_required_for_leads_when_enforced(client, settings):
 
     # ordinary member pages unaffected
     assert client.get(reverse("core:home")).status_code == 200
+
+
+def test_profile_edit_updates_fields(client):
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.post(
+        reverse("accounts:profile_edit"),
+        {
+            "name": "New Name",
+            "handle": "n3w",
+            "about_me": "Security person",
+            "homepage": "https://example.com",
+            "twitter_handle": "newname",
+            "facebook_profile": "", "linkedin_profile": "",
+            "slideshare_profile": "", "github_profile": "newname",
+        },
+    )
+
+    assert response.status_code == 302
+    user.refresh_from_db()
+    assert user.name == "New Name" and user.github_profile == "newname"
+
+
+def test_my_rsvps_lists_states(client):
+    registration = EventRegistrationFactory()
+    client.force_login(registration.user)
+
+    response = client.get(reverse("accounts:my_rsvps"))
+
+    assert response.status_code == 200
+    assert registration in response.context["registrations"]

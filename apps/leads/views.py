@@ -810,3 +810,19 @@ def notification_log(request):
         "leads/notifications/log.html",
         {"auto_tasks": auto_tasks, "mailer_tasks": mailer_tasks},
     )
+
+
+@require_leader
+@require_POST
+def event_publish(request, pk):
+    """Ports the original leads publish/unpublish toggle (PRD 3.1) —
+    events are created unpublished; this flips visibility. First flip to
+    public also fires the event.published webhook + broadcast wiring."""
+    event = _load_authorized_event(request, pk)
+    event.public = not bool(event.public)
+    event.save()
+    messages.success(
+        request,
+        f'"{event.name}" is now {"published — visible on the chapter site" if event.public else "unpublished"}.',
+    )
+    return redirect("leads:event_show", pk=event.pk)
