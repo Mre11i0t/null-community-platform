@@ -10,9 +10,9 @@ from .models import Event, EventRegistration, EventSession, EventSessionComment,
 def detail(request, pk):
     """Mirrors EventsController#show."""
     event = get_object_or_404(
-        Event.objects.select_related("chapter", "venue", "event_type"), pk=pk
+        Event.objects.alive().select_related("chapter", "venue", "event_type"), pk=pk
     )
-    sessions = event.event_sessions.select_related("user").order_by("start_time")
+    sessions = event.event_sessions.alive().select_related("user").order_by("start_time")
 
     user_registration = None
     if request.user.is_authenticated:
@@ -33,7 +33,7 @@ def session_detail(request, pk):
     reload instead of in-place DOM updates.
     """
     session = get_object_or_404(
-        EventSession.objects.select_related("event", "user"), pk=pk
+        EventSession.objects.alive().select_related("event", "user"), pk=pk
     )
     comments = session.comments.select_related("user").order_by("-created_at")
 
@@ -135,7 +135,7 @@ def registration_new(request, event_id):
     event_registrations/new.html.erb); POST creates the registration.
     """
     event = get_object_or_404(
-        Event.objects.select_related("chapter", "venue", "event_type"), pk=event_id
+        Event.objects.alive().select_related("chapter", "venue", "event_type"), pk=event_id
     )
     already_registered = event.event_registrations.filter(user=request.user).exists()
     # event/user must be set on the instance before is_valid() runs, since
@@ -171,9 +171,29 @@ def registration_destroy(request, event_id, pk):
     return redirect("events:detail", pk=event.pk)
 
 
+def event_ics(request, pk):
+    """Single-event ICS download (Rev 3 roadmap #1) — lets an attendee
+    add just this event to their calendar, complementing the chapter-wide
+    feed at /chapters/<pk>/calendar.ics."""
+    from icalendar import Calendar
+
+    event = get_object_or_404(Event.objects.public_events(), pk=pk)
+    cal = Calendar()
+    cal.add("version", "2.0")
+    cal.add("prodid", "-//null Community Platform//null.community//")
+    cal.add_component(event.to_ics_event())
+    from django.http import HttpResponse
+
+    return HttpResponse(
+        cal.to_ical(),
+        content_type="text/calendar",
+        headers={"Content-Disposition": f'inline; filename="event-{event.pk}.ics"'},
+    )
+
+
 def venue_detail(request, pk):
     """Mirrors VenuesController#show / the `_venue` partial (address + map embed)."""
-    venue = get_object_or_404(Venue, pk=pk)
+    venue = get_object_or_404(Venue.objects.alive(), pk=pk)
     return render(request, "events/venue_detail.html", {"venue": venue})
 
 

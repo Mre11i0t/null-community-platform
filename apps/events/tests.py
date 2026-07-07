@@ -4,7 +4,7 @@ import pytest
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.events.models import EventRegistration, EventSessionComment, SessionVote
+from apps.events.models import Event, EventRegistration, EventSessionComment, SessionVote
 from tests.factories import (
     EventFactory,
     EventRegistrationFactory,
@@ -277,3 +277,102 @@ def test_my_sessions_only_shows_own_sessions(client):
 
     sessions = list(response.context["sessions"])
     assert sessions == [own_session]
+
+
+# --- Rev 3 foundations: soft-delete, per-event ICS, tz display --------------
+
+
+def test_soft_deleted_event_vanishes_from_public_pages_but_stays_in_db(client):
+    event = EventFactory(
+        public=True,
+        start_time=timezone.now() + datetime.timedelta(days=3),
+        end_time=timezone.now() + datetime.timedelta(days=3, hours=2),
+    )
+    assert client.get(reverse("events:detail", args=[event.pk])).status_code == 200
+
+    event.soft_delete()
+
+    assert client.get(reverse("events:detail", args=[event.pk])).status_code == 404
+    response = client.get(reverse("core:home"))
+    assert event not in response.context["events"]
+    assert Event.objects.filter(pk=event.pk).exists()  # still in DB for admin
+
+    event.restore()
+    assert client.get(reverse("events:detail", args=[event.pk])).status_code == 200
+
+
+def test_soft_deleted_session_404s_and_leaves_event_page(client):
+    session = EventSessionFactory()
+    session.soft_delete()
+
+    assert client.get(reverse("events:session_detail", args=[session.pk])).status_code == 404
+    response = client.get(reverse("events:detail", args=[session.event.pk]))
+    assert session not in response.context["sessions"]
+
+
+def test_lead_can_archive_event_but_other_chapters_lead_cannot(client):
+    from tests.factories import ChapterLeadFactory
+
+    event = EventFactory(
+        start_time=timezone.now() + datetime.timedelta(days=3),
+        end_time=timezone.now() + datetime.timedelta(days=3, hours=2),
+    )
+    outsider = ChapterLeadFactory()  # lead of a different chapter
+    client.force_login(outsider.user)
+    response = client.post(reverse("leads:event_delete", args=[event.pk]))
+    event.refresh_from_db()
+    assert response.status_code == 403 and event.deleted_at is None
+
+    lead = ChapterLeadFactory(chapter=event.chapter)
+    client.force_login(lead.user)
+    client.post(reverse("leads:event_delete", args=[event.pk]))
+    event.refresh_from_db()
+    assert event.deleted_at is not None
+
+
+def test_venue_archive_blocked_while_upcoming_events_exist(client):
+    from tests.factories import ChapterLeadFactory
+
+    event = EventFactory(
+        start_time=timezone.now() + datetime.timedelta(days=3),
+        end_time=timezone.now() + datetime.timedelta(days=3, hours=2),
+    )
+    venue = event.venue
+    lead = ChapterLeadFactory(chapter=venue.chapter)
+    client.force_login(lead.user)
+
+    client.post(reverse("leads:venue_delete", args=[venue.pk]))
+    venue.refresh_from_db()
+    assert venue.deleted_at is None  # blocked
+
+    event.soft_delete()
+    client.post(reverse("leads:venue_delete", args=[venue.pk]))
+    venue.refresh_from_db()
+    assert venue.deleted_at is not None
+
+
+def test_per_event_ics_download(client):
+    event = EventFactory(
+        public=True,
+        name="ICS Single Event",
+        start_time=timezone.now() + datetime.timedelta(days=3),
+        end_time=timezone.now() + datetime.timedelta(days=3, hours=2),
+    )
+    response = client.get(reverse("events:event_ics", args=[event.pk]))
+    assert response.status_code == 200
+    assert response["Content-Type"] == "text/calendar"
+    body = response.content.decode()
+    assert "BEGIN:VEVENT" in body and "ICS Single Event" in body
+
+    event.public = False
+    event.save()
+    assert client.get(reverse("events:event_ics", args=[event.pk])).status_code == 404
+
+
+def test_with_tz_filter_appends_ist_label():
+    from apps.core.templatetags.core_extras import with_tz
+
+    dt = timezone.now()
+    rendered = with_tz(dt)
+    assert rendered.endswith("IST")
+    assert with_tz(None) == ""

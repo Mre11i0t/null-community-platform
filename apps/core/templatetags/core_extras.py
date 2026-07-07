@@ -30,3 +30,17 @@ def safe_url(value):
     if not re.match(r"(?i)^https?://", s):
         return f"http://{s}"
     return s
+
+
+@register.filter(name="with_tz")
+def with_tz(value, fmt="l F d Y g:i A"):
+    """Formats a datetime in the active timezone *with an explicit
+    timezone label* (e.g. "Saturday July 12 2026 6:30 PM IST") — Rev 3
+    directive: times must never be ambiguous, since online/hybrid
+    attendees may not share the event's timezone."""
+    from django.utils import formats, timezone as tz
+
+    if not value:
+        return ""
+    local = tz.localtime(value)
+    return f"{formats.dateformat.format(local, fmt)} {local.tzname()}"

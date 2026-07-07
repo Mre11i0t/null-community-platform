@@ -5,11 +5,11 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.chapters.models import Chapter
-from apps.core.models import TimeStampedModel
+from apps.core.models import SoftDeleteModel, SoftDeleteQuerySet, TimeStampedModel
 from taggit.managers import TaggableManager
 
 
-class Venue(TimeStampedModel):
+class Venue(TimeStampedModel, SoftDeleteModel):
     """Mirrors `venues`. See app/models/venue.rb."""
 
     chapter = models.ForeignKey(Chapter, on_delete=models.PROTECT, related_name="venues")
@@ -22,6 +22,8 @@ class Venue(TimeStampedModel):
     contact_email = models.EmailField(max_length=255, blank=True)
     contact_mobile = models.CharField(max_length=255, blank=True)
     contact_notes = models.TextField(blank=True)
+
+    objects = SoftDeleteQuerySet.as_manager()
 
     class Meta:
         db_table = "venues"
@@ -47,23 +49,26 @@ class EventType(TimeStampedModel):
         return self.name
 
 
-class EventQuerySet(models.QuerySet):
-    """Ported from the scopes in app/models/event.rb."""
+class EventQuerySet(SoftDeleteQuerySet):
+    """Ported from the scopes in app/models/event.rb. All public-facing
+    scopes exclude soft-deleted events."""
 
     def future_events(self):
-        return self.filter(end_time__gt=timezone.now())
+        return self.alive().filter(end_time__gt=timezone.now())
 
     def future_public_events(self):
         return self.future_events().filter(public=True)
 
     def public_events(self):
-        return self.filter(public=True)
+        return self.alive().filter(public=True)
 
     def archives(self):
-        return self.filter(public=True, can_show_on_archive=True, start_time__lt=timezone.now())
+        return self.alive().filter(
+            public=True, can_show_on_archive=True, start_time__lt=timezone.now()
+        )
 
 
-class Event(TimeStampedModel):
+class Event(TimeStampedModel, SoftDeleteModel):
     """Mirrors `events`. See app/models/event.rb.
 
     Notification state machine values mirror EventNotification's
@@ -198,7 +203,7 @@ class Event(TimeStampedModel):
         return ics_event
 
 
-class EventSession(TimeStampedModel):
+class EventSession(TimeStampedModel, SoftDeleteModel):
     """Mirrors `event_sessions`. See app/models/event_session.rb.
 
     Voting: the original used acts_as_votable (a separate polymorphic
@@ -232,6 +237,8 @@ class EventSession(TimeStampedModel):
     placeholder = models.BooleanField(default=False)
     video_url = models.URLField(max_length=255, blank=True)
     image = models.ImageField(upload_to="sessions/", blank=True, null=True)
+
+    objects = SoftDeleteQuerySet.as_manager()
 
     class Meta:
         db_table = "event_sessions"

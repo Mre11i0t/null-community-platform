@@ -104,7 +104,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     def managed_venues(self):
         from apps.events.models import Venue
 
-        return Venue.objects.filter(chapter__in=self.managed_chapters())
+        return Venue.objects.alive().filter(chapter__in=self.managed_chapters())
 
     def managed_venue(self, venue):
         return venue is not None and venue.chapter_id in self.managed_chapters().values_list("id", flat=True)
@@ -114,7 +114,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
 
         from apps.events.models import Event
 
-        return Event.objects.filter(chapter__in=self.managed_chapters(), end_time__gt=timezone.now())
+        return Event.objects.alive().filter(chapter__in=self.managed_chapters(), end_time__gt=timezone.now())
 
     def managed_old_events(self):
         from datetime import timedelta
@@ -124,14 +124,14 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
         from apps.events.models import Event
 
         now = timezone.now()
-        return Event.objects.filter(
+        return Event.objects.alive().filter(
             chapter__in=self.managed_chapters(),
             end_time__lt=now - timedelta(hours=8),
             start_time__gt=now - timedelta(days=30),
         )
 
     def speaker_sessions(self):
-        return self.event_sessions.filter(placeholder=False).order_by("-created_at")
+        return self.event_sessions.filter(placeholder=False, deleted_at__isnull=True).order_by("-created_at")
 
     def registered_participation(self):
         from django.db.models import Q

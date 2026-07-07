@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.accounts.models import User
@@ -97,9 +98,12 @@ def event_edit(request, pk):
 @require_leader
 @require_POST
 def event_delete(request, pk):
-    """Ported from Leads::EventsController#destroy — deletion is
-    disabled in the original (commented out), just redirects."""
-    messages.warning(request, "Event deletion is currently disabled.")
+    """The original disabled destroy outright (gap #2); Rev 3 replaces it
+    with soft-delete — the event vanishes from all public/lead listings
+    but stays restorable in the admin."""
+    event = _load_authorized_event(request, pk)
+    event.soft_delete()
+    messages.success(request, f'Event "{event.name}" has been archived.')
     return redirect("leads:event_index")
 
 
@@ -109,7 +113,7 @@ def event_delete(request, pk):
 @require_leader
 def session_index(request, event_id):
     event = _load_authorized_event(request, event_id)
-    sessions = event.event_sessions.select_related("user").order_by("start_time")
+    sessions = event.event_sessions.alive().select_related("user").order_by("start_time")
     return render(request, "leads/event_sessions/index.html", {"event": event, "sessions": sessions})
 
 
@@ -156,9 +160,11 @@ def session_edit(request, event_id, pk):
 @require_leader
 @require_POST
 def session_delete(request, event_id, pk):
-    """Ported from Leads::EventSessionsController#destroy — disabled."""
+    """Soft-deletes a session (was disabled in the original — gap #2)."""
     event = _load_authorized_event(request, event_id)
-    messages.warning(request, "Session deletion disabled currently.")
+    session = get_object_or_404(EventSession, pk=pk, event=event)
+    session.soft_delete()
+    messages.success(request, f'Session "{session.name}" has been archived.')
     return redirect("leads:session_index", event_id=event.pk)
 
 
@@ -227,11 +233,17 @@ def venue_edit(request, pk):
 @require_leader
 @require_POST
 def venue_delete(request, pk):
-    """Ported from Leads::VenuesController#destroy — disabled."""
+    """Soft-deletes a venue (was disabled in the original — gap #2).
+    Blocked while any live event still uses it, since Event.venue is
+    PROTECT and a hidden venue under a visible event would be confusing."""
     venue = get_object_or_404(Venue, pk=pk)
     if not request.user.managed_venue(venue):
         raise PermissionDenied
-    messages.warning(request, "Deletion is currently disabled.")
+    if venue.events.alive().filter(end_time__gt=timezone.now()).exists():
+        messages.warning(request, "This venue still has upcoming events — move or archive them first.")
+        return redirect("leads:venue_index")
+    venue.soft_delete()
+    messages.success(request, f'Venue "{venue.name}" has been archived.')
     return redirect("leads:venue_index")
 
 

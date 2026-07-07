@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils import timezone
 from django.utils.html import format_html
 
 from .models import (
@@ -11,12 +12,32 @@ from .models import (
 )
 
 
+class SoftDeleteAdminMixin:
+    """Admin sees everything (default manager), with archive/restore
+    bulk actions and an Archived column — the recovery path for what
+    leads soft-delete."""
+
+    actions = ["archive_selected", "restore_selected"]
+
+    @admin.display(boolean=True, description="Archived")
+    def is_archived(self, obj):
+        return obj.deleted_at is not None
+
+    @admin.action(description="Archive selected (soft delete)")
+    def archive_selected(self, request, queryset):
+        queryset.filter(deleted_at__isnull=True).update(deleted_at=timezone.now())
+
+    @admin.action(description="Restore selected")
+    def restore_selected(self, request, queryset):
+        queryset.update(deleted_at=None)
+
+
 @admin.register(Event)
-class EventAdmin(admin.ModelAdmin):
+class EventAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     """Mirrors app/admin/event.rb."""
 
-    list_display = ["id", "chapter", "event_type", "name", "public", "start_time"]
-    list_filter = ["public", "chapter", "venue", "event_type"]
+    list_display = ["id", "chapter", "event_type", "name", "public", "start_time", "is_archived"]
+    list_filter = ["public", "chapter", "venue", "event_type", ("deleted_at", admin.EmptyFieldListFilter)]
     search_fields = ["name"]
     date_hierarchy = "start_time"
     autocomplete_fields = ["chapter", "venue", "event_type"]
@@ -78,9 +99,9 @@ class EventAdmin(admin.ModelAdmin):
 
 
 @admin.register(Venue)
-class VenueAdmin(admin.ModelAdmin):
-    list_display = ["id", "chapter", "name", "contact_name"]
-    list_filter = ["chapter"]
+class VenueAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
+    list_display = ["id", "chapter", "name", "contact_name", "is_archived"]
+    list_filter = ["chapter", ("deleted_at", admin.EmptyFieldListFilter)]
     search_fields = ["name"]
 
 
@@ -92,11 +113,11 @@ class EventTypeAdmin(admin.ModelAdmin):
 
 
 @admin.register(EventSession)
-class EventSessionAdmin(admin.ModelAdmin):
+class EventSessionAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     """Mirrors app/admin/event_session.rb — speaker assigned via autocomplete."""
 
-    list_display = ["id", "name", "event", "user", "placeholder"]
-    list_filter = ["placeholder"]
+    list_display = ["id", "name", "event", "user", "placeholder", "is_archived"]
+    list_filter = ["placeholder", ("deleted_at", admin.EmptyFieldListFilter)]
     search_fields = ["name"]
     autocomplete_fields = ["event", "user"]
 

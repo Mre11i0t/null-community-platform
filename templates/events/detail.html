@@ -19,7 +19,8 @@
         </span>
       </h1>
       <p class="lead">
-        {{ event.start_time|date:"l F d Y g:i A" }}
+        {{ event.start_time|with_tz }}
+        <small><a href="{% url 'events:event_ics' event.pk %}" title="Add to calendar"><i class="fa fa-calendar"></i> .ics</a></small>
         <small><span class="label label-success">{{ event.event_type.name }}</span></small>
         <small><a href="{% url 'chapters:detail' event.chapter.pk %}"><span class="label label-success">{{ event.chapter.name }}</span></a></small>
       </p>
@@ -57,7 +58,7 @@
       <tr><th>Registrations</th><td><a href="{% url 'events:registration_index' event.pk %}">{{ event.event_registrations.count }}</a></td></tr>
       <tr><th>Max Registrations</th><td>{% if event.max_registration %}{{ event.max_registration }}{% else %}Unlimited{% endif %}</td></tr>
       <tr><th>Event Type</th><td>{% if event.invite_only %}Invite Only{% else %}Open to Everybody{% endif %}</td></tr>
-      <tr><th>Start Time</th><td>{{ event.start_time|date:"g:i A" }}</td></tr>
+      <tr><th>Start Time</th><td>{{ event.start_time|with_tz:"g:i A" }}</td></tr>
       <tr><th>End Time</th><td>{{ event.end_time|date:"g:i A" }}</td></tr>
     </table>
   </div>
