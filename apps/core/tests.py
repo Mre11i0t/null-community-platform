@@ -63,7 +63,7 @@ def test_archives_paginates_past_events(client):
 # --- Static / embed pages ---------------------------------------------------
 
 
-@pytest.mark.parametrize("url_name", ["core:about", "core:privacy", "core:calendar", "core:forum"])
+@pytest.mark.parametrize("url_name", ["core:about", "core:privacy", "core:calendar"])
 def test_static_embed_pages_render(client, url_name):
     response = client.get(reverse(url_name))
     assert response.status_code == 200

@@ -55,11 +55,6 @@ def calendar(request):
     return render(request, "home/calendar.html")
 
 
-def forum(request):
-    """Mirrors HomeController#forum — embedded Google Groups forum."""
-    return render(request, "home/forum.html")
-
-
 def stats_index(request):
     """Mirrors StatsController#index — redirects to last year's stats."""
     return redirect(reverse("core:stats_show", args=[timezone.now().year - 1]))
