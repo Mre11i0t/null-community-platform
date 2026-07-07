@@ -212,3 +212,24 @@ body {
 
 .upcoming-events .event-icon { margin-right: 8px; }
 .upcoming-events .text-muted { color: #6c757d; }
+
+/* --- Rev 3 modernization layer (no visual change) ------------------- */
+/* Theme tokens: the palette the vendored Yeti theme already uses,
+   exposed as custom properties so future tweaks happen in one place. */
+:root {
+  --nu-ink: #222222;
+  --nu-body: #333333;
+  --nu-accent: #d9534f;   /* Yeti's btn-danger red, the null accent */
+  --nu-primary: #008cba;  /* Yeti primary */
+  --nu-paper: #ffffff;
+}
+
+/* Respect users who turn off animation at the OS level. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

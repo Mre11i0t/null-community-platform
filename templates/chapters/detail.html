@@ -15,10 +15,10 @@
     <div class="row">
       <div class="col-md-5">
         <div class="col-md-12">
-          <img src="{{ chapter.image_url }}" class="img-rounded" width="400" height="350" alt="{{ chapter.name }}">
+          <img loading="lazy" decoding="async" src="{{ chapter.image_url }}" class="img-rounded" width="400" height="350" alt="{{ chapter.name }}">
         </div>
         <div class="col-md-12">
-          <center>
+          <div class="text-center">
             <ul class="nav navbar-nav">
               {% if chapter.has_twitter_handle %}
               <li><a href="{{ chapter.twitter_handle|safe_url }}" target="_blank"><i class="fa fa-twitter fa-4x"></i></a></li>
@@ -30,7 +30,7 @@
               <li><a href="{{ chapter.github_profile|safe_url }}" target="_blank"><i class="fa fa-github fa-4x"></i></a></li>
               {% endif %}
             </ul>
-          </center>
+          </div>
         </div>
       </div>
       <div class="col-md-7">

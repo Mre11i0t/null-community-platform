@@ -1,9 +1,13 @@
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="{% block meta_description %}{{ CFG_APP_DESCRIPTION }}{% endblock %}">
+  <meta name="theme-color" content="#222222">
+  <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
+  <link rel="apple-touch-icon" href="{% static 'images/favicon.svg' %}">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:site" content="@null0x00">
   <meta name="twitter:title" content="{% block title %}{{ CFG_APP_TITLE }}{% endblock %}">

@@ -4,7 +4,7 @@
 {% block content %}
 <div class="row">
   <div class="col-md-4 text-center">
-    <img src="{{ profile_user.avatar_url }}" class="img-circle" width="180" alt="{{ profile_user.name }}">
+    <img loading="lazy" decoding="async" src="{{ profile_user.avatar_url }}" class="img-circle" width="180" alt="{{ profile_user.name }}">
     <h1>{{ profile_user.name }}</h1>
     <p>{{ profile_user.about_me|markdown_html }}</p>
     <ul class="list-inline">

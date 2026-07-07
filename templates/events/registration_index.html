@@ -15,7 +15,7 @@
   {% for reg in registrations %}
   <div class="col-md-1">
     <a href="{% url 'accounts:public_profile' reg.user.pk %}">
-      <img src="{{ reg.user.avatar_url }}" class="img img-rounded" width="80" height="80" alt="{{ reg.user.name }}">
+      <img loading="lazy" decoding="async" src="{{ reg.user.avatar_url }}" class="img img-rounded" width="80" height="80" alt="{{ reg.user.name }}">
     </a>
     <br>
     <small><a href="{% url 'accounts:public_profile' reg.user.pk %}" style="text-decoration:none;">{{ reg.user.name|truncatechars:10 }}</a></small>

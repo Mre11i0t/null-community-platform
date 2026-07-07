@@ -5,15 +5,13 @@
 <div class="row">
   <div class="col-md-12">
     <div class="jumbotron">
-      <h1>
-        <center>
+      <h1 class="text-center">
           Welcome to <strong>null{% if current_chapter %} {{ current_chapter.name }}{% endif %}</strong><br>
           <small>{% if current_chapter %}The Open Security Community — {{ current_chapter.city|default:current_chapter.name }} chapter{% else %}The Open Security Community{% endif %}</small>
-        </center>
-      </h1>
+        </h1>
       {% if current_chapter %}
       <p class="text-justify">{{ current_chapter.description }}</p>
-      <center>
+      <div class="text-center">
         {% if not user.is_authenticated %}
           <a href="{% url 'account_signup' %}" class="btn btn-danger btn-lg"><i class="fa fa-group"></i> Join The null Community</a>
         {% endif %}
@@ -21,7 +19,7 @@
         <a href="{% url 'chapters:calendar_ics' current_chapter.pk %}" class="btn btn-lg btn-primary"><i class="fa fa-rss"></i> Subscribe (.ics)</a>
         <a href="{% url 'core:leaderboard' %}" class="btn btn-lg btn-primary"><i class="fa fa-trophy"></i> Leaderboard</a>
         <a href="{% url 'proposals:proposal_new' %}" class="btn btn-lg btn-primary"><i class="fa fa-microphone"></i> Propose a Talk</a>
-      </center>
+      </div>
       {% else %}
       <p class="text-justify">
         null is one of the most active, open security communities.
@@ -29,18 +27,18 @@
         In a calendar year, null chapters host about 100+ events across security domains and impact about 8000-10000 security professionals, enthusiasts, and beginners with their initiatives.
         null is open, professional, inclusive, responsible, and most importantly completely volunteer-driven.
       </p>
-      <center>
+      <div class="text-center">
         {% if not user.is_authenticated %}
           <a href="{% url 'account_signup' %}" class="btn btn-danger btn-lg"><i class="fa fa-group"></i> Join The null Community</a>
         {% endif %}
         <a href="{% url 'core:start_chapter' %}" class="btn btn-lg btn-danger btn-primary"><i class="fa fa-thumb-tack"></i> Start a Chapter</a>
-      </center>
+      </div>
       <br>
-      <center>
+      <div class="text-center">
         <a href="{% url 'chapters:list' %}" class="btn btn-lg btn-primary"><i class="fa fa-globe"></i> Find a Chapter Near You</a>
         <a href="https://linktr.ee/nullcommunity" class="btn btn-lg btn-primary" target="_blank"><i class="fa fa-link"></i> Social Network Links</a>
         <a href="https://jobs.null.community" class="btn btn-lg btn-primary" target="_blank"><i class="fa fa-briefcase"></i> Jobs Portal</a>
-      </center>
+      </div>
       {% endif %}
     </div>
   </div>
@@ -49,32 +47,32 @@
 <div class="row">
   <div class="col-md-4">
     <div class="panel panel-primary">
-      <div class="panel-heading"><center>Active Chapters</center></div>
+      <div class="panel-heading"><div class="text-center">Active Chapters</div></div>
       <a href="{% url 'chapters:list' %}" style="color:inherit">
-        <div class="panel-body"><center><h1>{{ active_chapters_count }}</h1></center></div>
+        <div class="panel-body"><div class="text-center"><h1>{{ active_chapters_count }}</h1></div></div>
       </a>
     </div>
   </div>
   <div class="col-md-4">
     <div class="panel panel-primary">
-      <div class="panel-heading"><center>Upcoming Events</center></div>
+      <div class="panel-heading"><div class="text-center">Upcoming Events</div></div>
       <a href="{% url 'core:upcoming' %}" style="color:inherit">
-        <div class="panel-body"><center><h1>{{ events.count }}</h1></center></div>
+        <div class="panel-body"><div class="text-center"><h1>{{ events.count }}</h1></div></div>
       </a>
     </div>
   </div>
   <div class="col-md-4">
     <div class="panel panel-primary">
-      <div class="panel-heading"><center>Security Jobs</center></div>
+      <div class="panel-heading"><div class="text-center">Security Jobs</div></div>
       <a href="http://jobs.null.community/" target="_blank" style="color:inherit">
-        <div class="panel-body"><center><h1><i class="fa fa-external-link"></i></h1></center></div>
+        <div class="panel-body"><div class="text-center"><h1><i class="fa fa-external-link"></i></h1></div></div>
       </a>
     </div>
   </div>
 </div>
 
 <div class="row" style="margin-bottom:1em;">
-  <h1><center>Upcoming Events{% if current_chapter %} in {{ current_chapter.name }}{% endif %}</center></h1>
+  <h1 class="text-center">Upcoming Events{% if current_chapter %} in {{ current_chapter.name }}{% endif %}</h1>
   <div class="col-md-12">
     {% if events %}
       {% include "partials/_event_list.html" %}
@@ -85,11 +83,11 @@
 </div>
 
 <div class="row" style="margin-bottom:1em;">
-  <h1><center>Engage with <strong>null</strong></center></h1>
+  <h1 class="text-center">Engage with <strong>null</strong></h1>
   <hr>
   <div class="col-md-4">
     <div class="panel panel-default">
-      <div class="panel-heading"><center><h3 class="panel-title">Mailing List</h3></center></div>
+      <div class="panel-heading"><div class="text-center"><h3 class="panel-title">Mailing List</h3></div></div>
       <div class="panel-body">
         <p class="lead text-justify" style="min-height:360px;">
           Join the mailing list to keep yourself updated about our activities &amp; events. Join it for deep technical discussions revolving around computer security &amp; nothing else. Some of the best security professionals answer queries, discuss new findings and more, all in the mailing list.
@@ -100,7 +98,7 @@
   </div>
   <div class="col-md-4">
     <div class="panel panel-default">
-      <div class="panel-heading"><center><h3 class="panel-title">Become a Volunteer</h3></center></div>
+      <div class="panel-heading"><div class="text-center"><h3 class="panel-title">Become a Volunteer</h3></div></div>
       <div class="panel-body">
         <p class="lead text-justify" style="min-height:360px;">
           null is purely driven by volunteers. Volunteers support and contribute in making the community the way it is. Benefits of being a volunteer include a cool @null.community email address, access to null events, mentorship opportunities with the best in the Industry and more. So become a volunteer, now!
@@ -111,7 +109,7 @@
   </div>
   <div class="col-md-4">
     <div class="panel panel-default">
-      <div class="panel-heading"><center><h3 class="panel-title">Start a Chapter</h3></center></div>
+      <div class="panel-heading"><div class="text-center"><h3 class="panel-title">Start a Chapter</h3></div></div>
       <div class="panel-body">
         <p class="lead text-justify" style="min-height:360px;">
           Start a new chapter! A few conditions apply: A minimum of 3 interested people are required to begin the process of creating a new chapter. Once you have the required number, you need to conduct a pre-null meet and fulfill our criteria. If you think you are ready, get started by clicking below
