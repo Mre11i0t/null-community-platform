@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block page_title %}Report an incident — null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 col-md-offset-2">
+    <div class="page-header"><h1>Report a Code of Conduct incident</h1></div>
+
+    {% if sent %}
+      <div class="alert alert-success">
+        <strong>Report received.</strong> It has gone directly and confidentially to the community response team. Thank you for speaking up.
+      </div>
+    {% else %}
+    <p class="lead">Reports go only to the community response team. They are never public, and never shared with the people involved without your consent.</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Where did it happen?</label>
+        <input type="text" name="where" class="form-control" placeholder="Event, venue, or online space" maxlength="255">
+      </div>
+      <div class="form-group">
+        <label>What happened? *</label>
+        <textarea name="description" class="form-control" rows="6" required></textarea>
+      </div>
+      <div class="checkbox">
+        <label><input type="checkbox" name="contact_ok" checked> The response team may contact me about this report</label>
+      </div>
+      <button type="submit" class="btn btn-lg btn-danger">Submit confidential report</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

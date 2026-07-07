@@ -36,6 +36,14 @@ class UserFactory(factory.django.DjangoModelFactory):
             obj.save()
 
 
+    @factory.post_generation
+    def coc(self, create, extracted, **kwargs):
+        """Rev 3: most tests exercise flows that assume the member has
+        accepted the current CoC (it's required at signup); pass
+        coc=False to get a user who hasn't."""
+        if create and extracted is not False:
+            self.acknowledge_coc()
+
 class ChapterFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Chapter

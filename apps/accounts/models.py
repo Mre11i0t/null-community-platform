@@ -1,5 +1,6 @@
 import secrets
 
+from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
@@ -153,6 +154,40 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
         limit = settings.NO_SHOW_STRIKE_LIMIT
         return limit > 0 and self.no_show_strikes() >= limit
 
+    def has_acknowledged_coc(self):
+        from django.conf import settings as s
+
+        return self.coc_acknowledgements.filter(version=s.COC_VERSION).exists()
+
+    def acknowledge_coc(self):
+        from django.conf import settings as s
+
+        CocAcknowledgement.objects.get_or_create(user=self, version=s.COC_VERSION)
+
+    def anonymize_and_deactivate(self):
+        """Rev 3 (closes gap #1): self-service account deletion. History
+        rows (registrations, comments, talks) survive but point at an
+        anonymized shell — names, contacts, profiles, and tokens gone."""
+        self.email = f"deleted-{self.pk}@anonymized.invalid"
+        self.name = "Deleted Member"
+        self.handle = ""
+        self.twitter_handle = ""
+        self.facebook_profile = ""
+        self.linkedin_profile = ""
+        self.slideshare_profile = ""
+        self.github_profile = ""
+        self.homepage = ""
+        self.about_me = ""
+        self.avatar = None
+        self.is_active = False
+        self.set_unusable_password()
+        self.save()
+        self.api_tokens.all().delete()
+        # allauth's EmailAddress rows carry the real address — purge them
+        from allauth.account.models import EmailAddress
+
+        EmailAddress.objects.filter(user=self).delete()
+
     def registered_participation(self):
         from django.db.models import Q
 
@@ -212,3 +247,23 @@ class UserApiToken(TimeStampedModel):
     def set_active(self):
         self.active = True
         self.save(update_fields=["active"])
+
+
+class CocAcknowledgement(models.Model):
+    """Rev 3 trust & safety: a row per (user, CoC version) acceptance —
+    versioned so a policy update can re-prompt everyone."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="coc_acknowledgements"
+    )
+    version = models.CharField(max_length=16)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "coc_acknowledgements"
+        constraints = [
+            models.UniqueConstraint(fields=["user", "version"], name="one_ack_per_version"),
+        ]
+
+    def __str__(self):
+        return f"{self.user} accepted CoC v{self.version}"

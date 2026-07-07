@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
+    "allauth.mfa",
     "django_celery_beat",
     "django_celery_results",
     "crispy_forms",
@@ -62,6 +63,7 @@ MIDDLEWARE = [
     "auditlog.middleware.AuditlogMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "apps.chapters.middleware.ChapterSiteMiddleware",
+    "apps.accounts.middleware.Privileged2FAMiddleware",
     "apps.analytics.middleware.PageVisitMiddleware",
 ]
 
@@ -216,6 +218,14 @@ CELERY_BEAT_SCHEDULE = {
 # RSVPing. Set NO_SHOW_STRIKE_LIMIT=0 to disable blocking entirely.
 NO_SHOW_STRIKE_LIMIT = env.int("NO_SHOW_STRIKE_LIMIT", default=3)
 NO_SHOW_WINDOW_DAYS = env.int("NO_SHOW_WINDOW_DAYS", default=180)
+
+# Rev 3 trust & safety
+COC_VERSION = env("COC_VERSION", default="1.0")
+INCIDENT_RESPONSE_ADDRESSES = env.list("INCIDENT_RESPONSE_ADDRESSES", default=["conduct@null.community"])
+# When on, chapter leads must have TOTP 2FA to use /leads/, and staff
+# to use /admin/. Off by default so dev/test aren't blocked; prod.py
+# turns it on.
+REQUIRE_2FA_FOR_PRIVILEGED = env.bool("REQUIRE_2FA_FOR_PRIVILEGED", default=False)
 
 # reCAPTCHA — used on signup, RSVP, and session comments in the original app
 RECAPTCHA_PUBLIC_KEY = env("RECAPTCHA_PUBLIC_KEY", default="")

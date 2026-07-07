@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block page_title %}Delete account — null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <div class="page-header"><h1>Delete your account</h1></div>
+
+    <div class="alert alert-warning">
+      <strong>This cannot be undone.</strong> Your name, email, profile, and social links are permanently anonymized.
+      Your talks, comments, and event history remain, attributed to "Deleted Member".
+    </div>
+    <p>Want a copy of your data first? <a href="{% url 'accounts:export_data' %}">Download everything as JSON</a>.</p>
+
+    {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Confirm your password</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-danger">Permanently delete my account</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
