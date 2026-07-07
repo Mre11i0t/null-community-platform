@@ -13,6 +13,22 @@ Awesome — assets copied verbatim from the original app's
 
 ## Status
 
+**Rev 3 (2026-07):** the platform has moved well beyond the 1:1 Rails
+port. Chapter sites are multi-tenant on one server (subdomain routing +
+Caddy on-demand TLS), and the adopted Rev 3 roadmap is fully
+implemented — check-in (QR/scanner/kiosk, per-event opt-in), waitlists
+with auto-promotion, invite-only approval queue, custom RSVP questions,
+no-show strikes, the CFP review pipeline, versioned CoC + incident
+reporting + account anonymization + data export + TOTP 2FA for
+privileged users, cookieless per-domain analytics with chapter
+dashboards, host-scoped SEO (sitemaps/OG/JSON-LD/canonicals), the root
+directory site, gamification + event discussion + galleries + session
+Q&A, notification preference center + feedback surveys + WhatsApp
+adapter, personal agendas, env-gated Google/GitHub login, HMAC-signed
+outbound webhooks, Anymail/Mailgun delivery, and broadcast channels
+(Discord/Slack/Telegram/X) replacing the dead IFTTT tweets. All ten
+gaps documented in the original feature doc are closed. 189 tests.
+
 Feature-complete for the site's core member-facing and chapter-leader
 workflows. Read this section before assuming something works — a few
 things are genuinely stubbed, and everything here has only been run
@@ -21,7 +37,7 @@ against **dev** settings (PyMySQL, `DEBUG=True`, reCAPTCHA test keys,
 `mysqlclient`, `collectstatic`, real email/SMTP, real reCAPTCHA keys)
 has not been exercised.
 
-A 122-test pytest suite (96% coverage across `apps/`, one `tests.py`
+A 189-test pytest suite (96% coverage across `apps/`, one `tests.py`
 per app plus `apps/core/test_templatetags.py`) now backs most of what's
 listed below — see "Running the tests" further down. It's what turned
 up the two real bugs described in the notes under each area, and it's
@@ -89,8 +105,9 @@ concretely means in practice.
   `Event#to_ics_event`, ported from the `icalendar` gem usage in the
   original), a public venue detail page (`/venues/<id>/`), a "My
   Sessions" page for speakers (`/events/sessions/my_sessions/`), and
-  the embedded public Google Calendar / Google Groups forum pages
-  (`/calendar`, `/forum`) — these were found missing during a full
+  the embedded public Google Calendar page (`/calendar`; the Google
+  Groups forum page was removed in Rev 3 — the community no longer
+  uses a forum) — these were found missing during a full
   `config/routes.rb` diff against this app's URLs and added since they
   need no external credentials.
 - **Yearly community stats** (`/stats`, `/stats/<year>`, optional
