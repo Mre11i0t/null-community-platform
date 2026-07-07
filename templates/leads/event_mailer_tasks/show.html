@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load core_extras %}
 {% block page_title %}{{ task.subject }} - Mailer Task{% endblock %}
 {% block content %}
 <div class="row">
@@ -7,7 +8,16 @@
     <p><strong>Registration State:</strong> {{ task.registration_state|default:"All" }}</p>
     <p><strong>Ready for Delivery:</strong> {{ task.ready_for_delivery }}</p>
     <p><strong>Executed:</strong> {{ task.executed }}</p>
-    <blockquote>{{ task.body|linebreaksbr }}</blockquote>
+
+    <div class="panel panel-default">
+      <div class="panel-heading"><strong>Preview</strong> — exactly what recipients see (markdown rendered)</div>
+      <div class="panel-body">{{ task.body|markdown_html }}</div>
+    </div>
+
+    <form method="post" action="{% url 'leads:mailer_task_test_send' task.event.pk task.pk %}" style="display:inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-default"><i class="fa fa-paper-plane"></i> Send test to me</button>
+    </form>
   </div>
 </div>
 {% endblock %}

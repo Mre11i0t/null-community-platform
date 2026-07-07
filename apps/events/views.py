@@ -335,3 +335,36 @@ def my_schedule_ics(request):
         content_type="text/calendar",
         headers={"Content-Disposition": 'inline; filename="my-schedule.ics"'},
     )
+
+
+@login_required
+def event_feedback(request, event_id):
+    """Rev 3 post-event feedback: 1-5 rating + comment, one per
+    attendee, only after the event has ended."""
+    from django.http import Http404
+
+    from .models import EventFeedback
+
+    event = get_object_or_404(Event.objects.alive(), pk=event_id)
+    if event.end_time > timezone.now():
+        raise Http404("Feedback opens after the event ends.")
+    registration = event.event_registrations.filter(user=request.user).first()
+    if registration is None:
+        raise Http404("Feedback is for attendees.")
+
+    existing = EventFeedback.objects.filter(event=event, user=request.user).first()
+    if request.method == "POST":
+        try:
+            rating = int(request.POST.get("rating", 0))
+        except ValueError:
+            rating = 0
+        if 1 <= rating <= 5:
+            EventFeedback.objects.update_or_create(
+                event=event,
+                user=request.user,
+                defaults={"rating": rating, "comment": request.POST.get("comment", "").strip()},
+            )
+            messages.success(request, "Thanks — your feedback is in!")
+            return redirect("events:detail", pk=event.pk)
+        messages.error(request, "Pick a rating between 1 and 5.")
+    return render(request, "events/feedback.html", {"event": event, "existing": existing})

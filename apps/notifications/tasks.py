@@ -123,8 +123,12 @@ def _send_event_reminder(event):
 
 def _send_speaker_notification(event):
     """Ports EventAutomaticNotificationTask#speaker_notification."""
+    from .models import NotificationPreference
+
     for session in event.event_sessions.filter(placeholder=False).select_related("user"):
         if not session.user_id:
+            continue
+        if not NotificationPreference.for_user(session.user).email_speaker_notifications:
             continue
         body = render_to_string(
             "notifications/emails/speaker_notification.txt",
@@ -136,8 +140,12 @@ def _send_speaker_notification(event):
 
 def _send_speaker_reminder(event):
     """Ports EventAutomaticNotificationTask#speaker_reminder."""
+    from .models import NotificationPreference
+
     for session in event.event_sessions.filter(placeholder=False).select_related("user"):
         if not session.user_id:
+            continue
+        if not NotificationPreference.for_user(session.user).email_speaker_notifications:
             continue
         body = render_to_string(
             "notifications/emails/speaker_reminder.txt",
@@ -250,15 +258,26 @@ def _send_rsvp_reminders(event):
     at the Reminder2 transition."""
     from apps.events.models import EventRegistration
 
+    from .models import NotificationPreference
+    from .whatsapp import send_whatsapp
+
     context_base = _event_context(event)
     for registration in event.event_registrations.filter(
         state=EventRegistration.STATE_CONFIRMED
     ).select_related("user"):
         if not registration.user_id:
             continue
-        body = render_to_string("notifications/emails/rsvp_reminder.txt", context_base)
-        subject = f"[null Event] Reminder: {event.descriptive_name()}"
-        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [registration.user.email])
+        prefs = NotificationPreference.for_user(registration.user)
+        if prefs.email_reminders:
+            body = render_to_string("notifications/emails/rsvp_reminder.txt", context_base)
+            subject = f"[null Event] Reminder: {event.descriptive_name()}"
+            send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [registration.user.email])
+        if prefs.whatsapp_enabled:
+            send_whatsapp(
+                prefs.whatsapp_number,
+                f"Reminder from null: {event.descriptive_name()} is tomorrow! "
+                f"Details: {_event_url(event)}",
+            )
 
 
 @shared_task

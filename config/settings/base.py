@@ -206,6 +206,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.events.tasks.auto_mark_absent",
         "schedule": 900.0,
     },
+    "send-feedback-requests": {
+        "task": "apps.events.tasks.send_feedback_requests",
+        "schedule": 1800.0,
+    },
     # 1st of every month, 09:00 IST
     "monthly-chapter-reports": {
         "task": "apps.analytics.tasks.send_monthly_chapter_reports",
@@ -226,6 +230,11 @@ INCIDENT_RESPONSE_ADDRESSES = env.list("INCIDENT_RESPONSE_ADDRESSES", default=["
 # to use /admin/. Off by default so dev/test aren't blocked; prod.py
 # turns it on.
 REQUIRE_2FA_FOR_PRIVILEGED = env.bool("REQUIRE_2FA_FOR_PRIVILEGED", default=False)
+
+# Rev 3 communications
+FEEDBACK_DELAY_HOURS = env.int("FEEDBACK_DELAY_HOURS", default=6)
+WHATSAPP_API_TOKEN = env("WHATSAPP_API_TOKEN", default="")
+WHATSAPP_PHONE_NUMBER_ID = env("WHATSAPP_PHONE_NUMBER_ID", default="")
 
 # reCAPTCHA — used on signup, RSVP, and session comments in the original app
 RECAPTCHA_PUBLIC_KEY = env("RECAPTCHA_PUBLIC_KEY", default="")

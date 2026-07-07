@@ -683,3 +683,25 @@ def speaker_search(request):
             .distinct()[:50]
         )
     return render(request, "leads/proposals/speaker_search.html", {"q": q, "speakers": speakers})
+
+
+@require_leader
+@require_POST
+def mailer_task_test_send(request, event_id, pk):
+    """Rev 3: deliver the composed mailer to the lead themself, so the
+    real thing never goes out with broken markdown or a typo'd link."""
+    import markdown as md
+    from django.core.mail import EmailMultiAlternatives
+
+    event = _load_authorized_event(request, event_id)
+    task = get_object_or_404(EventMailerTask, pk=pk, event=event)
+    message = EmailMultiAlternatives(
+        subject=f"[TEST] {task.subject}",
+        body=task.body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[request.user.email],
+    )
+    message.attach_alternative(md.markdown(task.body, extensions=["fenced_code", "nl2br"]), "text/html")
+    message.send()
+    messages.success(request, f"Test email sent to {request.user.email}.")
+    return redirect("leads:mailer_task_show", event_id=event.pk, pk=task.pk)

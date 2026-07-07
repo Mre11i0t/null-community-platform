@@ -140,3 +140,22 @@ def export_data(request):
     response = JsonResponse(payload, json_dumps_params={"indent": 2})
     response["Content-Disposition"] = 'attachment; filename="my-null-data.json"'
     return response
+
+
+@login_required
+def notification_preferences(request):
+    """Rev 3 preference center — per-category email toggles + WhatsApp opt-in."""
+    from django.contrib import messages
+
+    from apps.notifications.models import NotificationPreference
+
+    prefs = NotificationPreference.for_user(request.user)
+    if request.method == "POST":
+        prefs.email_reminders = bool(request.POST.get("email_reminders"))
+        prefs.email_speaker_notifications = bool(request.POST.get("email_speaker_notifications"))
+        prefs.email_feedback_requests = bool(request.POST.get("email_feedback_requests"))
+        prefs.whatsapp_enabled = bool(request.POST.get("whatsapp_enabled"))
+        prefs.whatsapp_number = request.POST.get("whatsapp_number", "").strip()[:20]
+        prefs.save()
+        messages.success(request, "Preferences saved.")
+    return render(request, "accounts/notification_preferences.html", {"prefs": prefs})

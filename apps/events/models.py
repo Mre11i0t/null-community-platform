@@ -141,6 +141,10 @@ class Event(TimeStampedModel, SoftDeleteModel):
     custom_questions = models.JSONField(default=list, blank=True)
     cancellation_deadline_hours = models.PositiveIntegerField(default=0, blank=True)
 
+    # Rev 3 communications: set once the post-event feedback request
+    # email has gone out (idempotency for the beat sweep).
+    feedback_requested_at = models.DateTimeField(null=True, blank=True)
+
     objects = EventQuerySet.as_manager()
 
     class Meta:
@@ -240,6 +244,11 @@ class Event(TimeStampedModel, SoftDeleteModel):
 
     def register_name(self):
         return "Register" if self.invite_only() else "RSVP"
+
+    def average_feedback_rating(self):
+        from django.db.models import Avg
+
+        return self.feedback.aggregate(avg=Avg("rating"))["avg"]
 
     def cancellation_deadline(self):
         """Moment after which cancelling counts as a no-show; None when
@@ -527,3 +536,24 @@ class StarredSession(TimeStampedModel):
 
     def __str__(self):
         return f"{self.user} ★ {self.session}"
+
+
+class EventFeedback(TimeStampedModel):
+    """Rev 3 post-event feedback: one rating (+optional comment) per
+    attendee per event, requested by email after the event ends."""
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="feedback")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="event_feedback"
+    )
+    rating = models.PositiveSmallIntegerField(choices=[(i, str(i)) for i in range(1, 6)])
+    comment = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "event_feedback"
+        constraints = [
+            models.UniqueConstraint(fields=["event", "user"], name="one_feedback_per_attendee"),
+        ]
+
+    def __str__(self):
+        return f"{self.user} rated {self.event}: {self.rating}"

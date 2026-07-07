@@ -9,4 +9,5 @@ urlpatterns = [
     path("report-incident", views.report_incident, name="report_incident"),
     path("settings/delete-account", views.delete_account, name="delete_account"),
     path("settings/export.json", views.export_data, name="export_data"),
+    path("settings/notifications", views.notification_preferences, name="notification_preferences"),
 ]

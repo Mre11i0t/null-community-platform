@@ -297,3 +297,124 @@ def test_dispatch_is_idempotent_once_state_has_advanced():
     second_task_count = EventAutomaticNotificationTask.objects.filter(event=event).count()
 
     assert first_task_count == second_task_count
+
+
+# --- Rev 3 communications ------------------------------------------------------
+
+
+def test_rsvp_reminder_honors_email_preference():
+    import datetime as dt
+
+    from django.core import mail
+    from django.utils import timezone
+
+    from apps.events.models import EventRegistration
+    from apps.notifications.models import NotificationPreference
+    from apps.notifications.tasks import _send_rsvp_reminders
+    from tests.factories import EventFactory, EventRegistrationFactory
+
+    event = EventFactory(
+        public=True,
+        start_time=timezone.now() + dt.timedelta(days=1),
+        end_time=timezone.now() + dt.timedelta(days=1, hours=2),
+    )
+    wants = EventRegistrationFactory(event=event)
+    wants.set_state(EventRegistration.STATE_CONFIRMED)
+    opted_out = EventRegistrationFactory(event=event)
+    opted_out.set_state(EventRegistration.STATE_CONFIRMED)
+    prefs = NotificationPreference.for_user(opted_out.user)
+    prefs.email_reminders = False
+    prefs.save()
+
+    mail.outbox.clear()
+    _send_rsvp_reminders(event)
+
+    recipients = [addr for m in mail.outbox for addr in m.to]
+    assert wants.user.email in recipients
+    assert opted_out.user.email not in recipients
+
+
+def test_feedback_request_sweep_and_submission(client):
+    import datetime as dt
+
+    from django.core import mail
+    from django.urls import reverse
+    from django.utils import timezone
+
+    from apps.events.models import EventFeedback, EventRegistration
+    from apps.events.tasks import send_feedback_requests
+    from tests.factories import EventFactory, EventRegistrationFactory
+
+    event = EventFactory(
+        public=True,
+        start_time=timezone.now() - dt.timedelta(hours=10),
+        end_time=timezone.now() - dt.timedelta(hours=8),
+    )
+    registration = EventRegistrationFactory(event=event)
+    registration.set_state(EventRegistration.STATE_CONFIRMED)
+
+    mail.outbox.clear()
+    assert send_feedback_requests() == 1
+    assert send_feedback_requests() == 0  # idempotent
+    assert any("How was" in m.subject for m in mail.outbox)
+
+    client.force_login(registration.user)
+    response = client.post(
+        reverse("events:event_feedback", args=[event.pk]),
+        {"rating": "4", "comment": "Solid lineup"},
+    )
+    assert response.status_code == 302
+    feedback = EventFeedback.objects.get(event=event, user=registration.user)
+    assert feedback.rating == 4
+    assert event.average_feedback_rating() == 4
+
+    # non-attendee 404s
+    from tests.factories import UserFactory
+
+    client.force_login(UserFactory())
+    assert client.get(reverse("events:event_feedback", args=[event.pk])).status_code == 404
+
+
+def test_preference_center_updates(client):
+    from django.urls import reverse
+
+    from apps.notifications.models import NotificationPreference
+    from tests.factories import UserFactory
+
+    user = UserFactory()
+    client.force_login(user)
+    response = client.post(
+        reverse("accounts:notification_preferences"),
+        {"email_reminders": "", "email_speaker_notifications": "on",
+         "email_feedback_requests": "on", "whatsapp_enabled": "on",
+         "whatsapp_number": "+919812345678"},
+    )
+    assert response.status_code == 200
+    prefs = NotificationPreference.objects.get(user=user)
+    assert not prefs.email_reminders
+    assert prefs.whatsapp_enabled and prefs.whatsapp_number == "+919812345678"
+
+
+def test_whatsapp_dry_run_without_credentials():
+    from apps.notifications.whatsapp import send_whatsapp
+
+    assert send_whatsapp("+919812345678", "hello") is False  # not configured -> logged, not sent
+
+
+def test_mailer_test_send_goes_only_to_the_lead(client):
+    from django.core import mail
+    from django.urls import reverse
+
+    from tests.factories import ChapterLeadFactory, EventFactory, EventMailerTaskFactory
+
+    event = EventFactory()
+    task = EventMailerTaskFactory(event=event, subject="Big news", body="**hello**")
+    lead = ChapterLeadFactory(chapter=event.chapter)
+    client.force_login(lead.user)
+
+    mail.outbox.clear()
+    client.post(reverse("leads:mailer_task_test_send", args=[event.pk, task.pk]))
+
+    assert len(mail.outbox) == 1
+    assert mail.outbox[0].to == [lead.user.email]
+    assert mail.outbox[0].subject.startswith("[TEST]")

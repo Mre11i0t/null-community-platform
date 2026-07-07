@@ -43,6 +43,11 @@ urlpatterns = [
     path("events/<int:event_id>/mailer_tasks/", views.mailer_task_index, name="mailer_task_index"),
     path("events/<int:event_id>/mailer_tasks/new/", views.mailer_task_new, name="mailer_task_new"),
     path("events/<int:event_id>/mailer_tasks/<int:pk>/", views.mailer_task_show, name="mailer_task_show"),
+    path(
+        "events/<int:event_id>/mailer_tasks/<int:pk>/test_send/",
+        views.mailer_task_test_send,
+        name="mailer_task_test_send",
+    ),
     path("events/<int:event_id>/mailer_tasks/<int:pk>/edit/", views.mailer_task_edit, name="mailer_task_edit"),
     path(
         "events/<int:event_id>/mailer_tasks/<int:pk>/execute/", views.mailer_task_execute, name="mailer_task_execute"

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 from apps.core.models import TimeStampedModel
@@ -61,3 +62,30 @@ class EventAutomaticNotificationTask(TimeStampedModel):
 
     def __str__(self):
         return f"{self.event} - {self.mode}"
+
+
+class NotificationPreference(TimeStampedModel):
+    """Rev 3 preference center: one row per user; every user-directed
+    notification checks here first. Channels beyond email are opt-in.
+    Mailer tasks from leads and account emails (confirmation, password
+    reset) are transactional and always delivered."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notification_preference"
+    )
+    email_reminders = models.BooleanField(default=True)
+    email_speaker_notifications = models.BooleanField(default=True)
+    email_feedback_requests = models.BooleanField(default=True)
+    whatsapp_enabled = models.BooleanField(default=False)
+    whatsapp_number = models.CharField(max_length=20, blank=True, help_text="E.164, e.g. +9198xxxxxx")
+
+    class Meta:
+        db_table = "notification_preferences"
+
+    def __str__(self):
+        return f"Prefs for {self.user}"
+
+    @classmethod
+    def for_user(cls, user):
+        prefs, _ = cls.objects.get_or_create(user=user)
+        return prefs
