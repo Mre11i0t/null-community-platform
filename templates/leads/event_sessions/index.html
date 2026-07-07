@@ -16,12 +16,17 @@
 </div>
 <div class="table-responsive">
   <table class="table table-condensed">
-    <tr><th width="5%">#</th><th width="35%">Name</th><th width="25%">Presenter</th><th width="10%">Start</th><th></th></tr>
+    <tr><th width="5%">#</th><th width="35%">Name</th><th width="25%">Presenter</th><th width="12%">Slot</th><th width="10%">Start</th><th></th></tr>
     {% for session in sessions %}
     <tr>
       <td><a href="{% url 'events:session_detail' session.pk %}">#{{ session.pk }}</a></td>
       <td><a href="{% url 'leads:session_show' event.pk session.pk %}">{{ session.name|truncatechars:30 }}</a></td>
       <td><a href="{% url 'accounts:public_profile' session.user.pk %}">{{ session.user.name }}</a></td>
+      <td>
+        {% if session.placeholder %}<span class="label label-default">Placeholder</span>
+        {% elif session.speaker_confirmed_at %}<span class="label label-success">Confirmed</span>
+        {% else %}<span class="label label-warning">Unconfirmed</span>{% endif %}
+      </td>
       <td>{{ session.start_time|date:"H:i" }}</td>
       <td>
         <a href="{% url 'leads:session_edit' event.pk session.pk %}" style="text-decoration:none;"><i class="fa fa-edit"></i> Edit Session</a>

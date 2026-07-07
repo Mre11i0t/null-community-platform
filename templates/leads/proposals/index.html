@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block page_title %}Session proposals{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h1>Session proposals <small>CFP pipeline</small></h1></div>
+
+    <ul class="nav nav-pills" style="margin-bottom:16px">
+      <li{% if not status %} class="active"{% endif %}><a href="?">All</a></li>
+      {% for value, label in statuses %}
+        <li{% if status == value %} class="active"{% endif %}><a href="?status={{ value }}">{{ label }}</a></li>
+      {% endfor %}
+    </ul>
+
+    <table class="table table-striped">
+      <thead><tr><th>Topic</th><th>Proposer</th><th>Chapter</th><th>Type</th><th>Status</th><th>Avg score</th><th>Submitted</th></tr></thead>
+      <tbody>
+        {% for proposal in proposals %}
+        <tr>
+          <td><a href="{% url 'leads:proposal_review' proposal.pk %}">{{ proposal.session_topic }}</a></td>
+          <td>{{ proposal.user.name|default:proposal.user.email }}</td>
+          <td>{{ proposal.chapter.name }}</td>
+          <td>{{ proposal.event_type.name }}</td>
+          <td><span class="label label-{% if proposal.status == 'accepted' or proposal.status == 'scheduled' %}success{% elif proposal.status == 'rejected' %}danger{% else %}default{% endif %}">{{ proposal.get_status_display }}</span></td>
+          <td>{{ proposal.average_score|floatformat:1|default:"—" }}</td>
+          <td>{{ proposal.created_at|date:"M d, Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">No proposals{% if status %} in this state{% endif %}.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <a href="{% url 'leads:speaker_search' %}">Search past speakers by topic →</a>
+  </div>
+</div>
+{% endblock %}

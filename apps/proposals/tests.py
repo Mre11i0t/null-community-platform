@@ -6,6 +6,7 @@ from apps.proposals.models import SessionProposal, SessionRequest
 from tests.factories import (
     ChapterFactory,
     ChapterLeadFactory,
+    EventSessionFactory,
     EventTypeFactory,
     SessionProposalFactory,
     SessionRequestFactory,
@@ -139,3 +140,98 @@ def test_request_show(client):
     response = client.get(reverse("proposals:request_show", args=[session_request.pk]))
     assert response.status_code == 200
     assert response.context["session_request"] == session_request
+
+
+# --- Rev 3 CFP pipeline (closes gap #6) --------------------------------------
+
+
+def test_status_transition_emails_proposer():
+    from django.core import mail
+
+    from apps.proposals.models import SessionProposal
+
+    proposal = SessionProposalFactory()
+    assert proposal.status == SessionProposal.STATUS_SUBMITTED
+
+    mail.outbox.clear()
+    proposal.set_status(SessionProposal.STATUS_ACCEPTED, note="Great topic!")
+
+    proposal.refresh_from_db()
+    assert proposal.status == SessionProposal.STATUS_ACCEPTED
+    assert len(mail.outbox) == 1
+    assert proposal.user.email in mail.outbox[0].to
+    assert "Accepted" in mail.outbox[0].subject
+    assert "Great topic!" in mail.outbox[0].body
+
+    # no-op transition sends nothing
+    mail.outbox.clear()
+    proposal.set_status(SessionProposal.STATUS_ACCEPTED)
+    assert len(mail.outbox) == 0
+
+
+def test_lead_review_flow_scores_and_moves_to_under_review(client):
+    from django.urls import reverse
+
+    from apps.proposals.models import SessionProposal
+    from tests.factories import ChapterLeadFactory
+
+    proposal = SessionProposalFactory()
+    lead = ChapterLeadFactory(chapter=proposal.chapter)
+    client.force_login(lead.user)
+
+    response = client.post(
+        reverse("leads:proposal_review", args=[proposal.pk]),
+        {"action": "review", "score": "4", "comment": "Solid abstract"},
+    )
+    assert response.status_code == 302
+    proposal.refresh_from_db()
+    assert proposal.status == SessionProposal.STATUS_UNDER_REVIEW
+    assert proposal.average_score() == 4
+
+    # updating own review doesn't duplicate
+    client.post(
+        reverse("leads:proposal_review", args=[proposal.pk]),
+        {"action": "review", "score": "5", "comment": "Even better"},
+    )
+    assert proposal.reviews.count() == 1
+    assert proposal.average_score() == 5
+
+
+def test_review_denied_for_other_chapters_lead(client):
+    from django.urls import reverse
+
+    from tests.factories import ChapterLeadFactory
+
+    proposal = SessionProposalFactory()
+    outsider = ChapterLeadFactory()
+    client.force_login(outsider.user)
+    assert client.get(reverse("leads:proposal_review", args=[proposal.pk])).status_code == 403
+
+
+def test_speaker_confirmation_flow(client):
+    from django.urls import reverse
+
+    session = EventSessionFactory()
+    assert session.speaker_confirmed_at is None
+
+    # only the assigned speaker can confirm
+    stranger = UserFactory()
+    client.force_login(stranger)
+    assert client.post(reverse("events:session_confirm", args=[session.pk])).status_code == 404
+
+    client.force_login(session.user)
+    client.post(reverse("events:session_confirm", args=[session.pk]))
+    session.refresh_from_db()
+    assert session.speaker_confirmed_at is not None
+
+
+def test_co_speakers_credited_on_profile(client):
+    from django.urls import reverse
+
+    session = EventSessionFactory()
+    co = UserFactory()
+    session.co_speakers.add(co)
+
+    response = client.get(reverse("accounts:public_profile", args=[co.pk]))
+    assert session in response.context["co_speaker_sessions"]
+    assert "Co-speaker" in response.content.decode()

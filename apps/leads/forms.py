@@ -96,7 +96,16 @@ class LeadEventForm(forms.ModelForm):
 class LeadEventSessionForm(forms.ModelForm):
     """Ported from leads/event_sessions/_form.html.erb. The original's
     AJAX user-autocomplete is replaced by suggest_user (a JSON endpoint,
-    same as original) feeding a plain user_id input — see template."""
+    same as original) feeding a plain user_id input — see template.
+
+    Rev 3: co-speakers entered as comma-separated member emails; unknown
+    addresses are a validation error, not a silent drop."""
+
+    co_speaker_emails = forms.CharField(
+        label="Co-speakers (comma-separated member emails)",
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
 
     class Meta:
         model = EventSession
@@ -121,6 +130,29 @@ class LeadEventSessionForm(forms.ModelForm):
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "description": forms.Textarea(attrs={"class": "form-control", "rows": 4}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.initial["co_speaker_emails"] = ", ".join(
+                self.instance.co_speakers.values_list("email", flat=True)
+            )
+
+    def clean_co_speaker_emails(self):
+        from apps.accounts.models import User
+
+        emails = [e.strip().lower() for e in self.cleaned_data.get("co_speaker_emails", "").split(",") if e.strip()]
+        users = list(User.objects.filter(email__in=emails))
+        missing = set(emails) - {u.email.lower() for u in users}
+        if missing:
+            raise forms.ValidationError(f"No member account for: {', '.join(sorted(missing))}")
+        return users
+
+    def save(self, commit=True):
+        session = super().save(commit=commit)
+        if commit:
+            session.co_speakers.set(self.cleaned_data.get("co_speaker_emails") or [])
+        return session
 
 
 class LeadVenueForm(forms.ModelForm):

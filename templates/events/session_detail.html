@@ -38,6 +38,14 @@
       <strong><a href="{% url 'accounts:public_profile' session.user.pk %}" style="text-decoration:none;">{{ session.speaker_name }}</a></strong>
     </p>
     <p>{{ session.user.about_me|markdown_html }}</p>
+    {% with cos=session.co_speakers.all %}
+    {% if cos %}
+      <h4>Co-speakers</h4>
+      {% for co in cos %}
+        <p><a href="{% url 'accounts:public_profile' co.pk %}">{{ co.name|default:co.email }}</a></p>
+      {% endfor %}
+    {% endif %}
+    {% endwith %}
 
     <h3>Timing</h3>
     <p>Starts at <strong>{{ session.start_time|date:"l F d Y, g:i A" }}</strong>.</p>

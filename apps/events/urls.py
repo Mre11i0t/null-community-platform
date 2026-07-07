@@ -9,6 +9,7 @@ urlpatterns = [
     path("<int:pk>/calendar.ics", views.event_ics, name="event_ics"),
     path("sessions/my_sessions/", views.my_sessions, name="my_sessions"),
     path("sessions/<int:pk>/", views.session_detail, name="session_detail"),
+    path("sessions/<int:pk>/confirm/", views.session_confirm, name="session_confirm"),
     path("sessions/<int:pk>/like/", views.session_like, name="session_like"),
     path("sessions/<int:pk>/dislike/", views.session_dislike, name="session_dislike"),
     path("sessions/<int:session_id>/comments/new/", views.comment_create, name="comment_create"),

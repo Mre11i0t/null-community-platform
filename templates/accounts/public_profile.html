@@ -17,6 +17,11 @@
     <div class="row">
       <div class="col-xs-6"><span style="font-size:2em;">{{ registered_participation.count }}</span><br>Attended</div>
       <div class="col-xs-6"><span style="font-size:2em;">{{ speaker_sessions.count }}</span><br>Delivered</div>
+      {% if topics %}
+      <div class="col-xs-12" style="margin-top:8px">
+        {% for topic in topics %}<span class="label label-default">{{ topic }}</span> {% endfor %}
+      </div>
+      {% endif %}
     </div>
     <p class="text-muted" style="margin-top:1em;">Joined {{ profile_user.created_at|date:"F d Y" }}</p>
   </div>
@@ -32,6 +37,14 @@
       </li>
       {% empty %}
       <li class="text-muted">No sessions delivered yet.</li>
+      {% endfor %}
+      {% for s in co_speaker_sessions %}
+      <li>
+        <a href="{{ s.get_absolute_url }}">{{ s.name }}</a>
+        — {{ s.event.start_time|date:"F d Y" }}
+        <span class="label label-info">Co-speaker</span>
+        <span class="label label-success">{{ s.event.chapter.name }}</span>
+      </li>
       {% endfor %}
     </ul>
 

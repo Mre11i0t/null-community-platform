@@ -258,3 +258,14 @@ def registration_qr(request, event_id, pk):
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return HttpResponse(buf.getvalue(), content_type="image/png")
+
+
+@login_required
+def session_confirm(request, pk):
+    """Rev 3 speaker confirmation: the assigned speaker explicitly
+    confirms their slot; unconfirmed slots are flagged to leads."""
+    session = get_object_or_404(EventSession.objects.alive(), pk=pk, user=request.user)
+    if request.method == "POST":
+        session.confirm_speaker()
+        messages.success(request, f'Slot confirmed for "{session.name}" — thank you!')
+    return redirect("events:my_sessions")

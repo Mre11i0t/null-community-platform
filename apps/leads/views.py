@@ -124,10 +124,9 @@ def session_new(request, event_id):
     event = _load_authorized_event(request, event_id)
     if request.method == "POST":
         form = LeadEventSessionForm(request.POST, request.FILES)
+        form.instance.event = event
         if form.is_valid():
-            session = form.save(commit=False)
-            session.event = event
-            session.save()
+            session = form.save()
             messages.success(request, "Event session created successfully.")
             return redirect("leads:session_show", event_id=event.pk, pk=session.pk)
     else:
@@ -589,3 +588,98 @@ def approval_decide(request, event_id, pk):
 
     send_mail(subject, body, None, [registration.user.email], fail_silently=True)
     return redirect("leads:approval_queue", event_id=event.pk)
+
+
+# --- CFP review pipeline (Rev 3 — closes gap #6) ------------------------------
+
+
+@require_leader
+def proposal_index(request):
+    """All proposals for the leader's chapters, grouped by pipeline status."""
+    from apps.proposals.models import SessionProposal
+
+    status = request.GET.get("status", "")
+    proposals = (
+        SessionProposal.objects.filter(chapter__in=request.user.managed_chapters())
+        .select_related("user", "chapter", "event_type")
+        .order_by("-created_at")
+    )
+    if status:
+        proposals = proposals.filter(status=status)
+    return render(
+        request,
+        "leads/proposals/index.html",
+        {
+            "proposals": proposals,
+            "status": status,
+            "statuses": SessionProposal.STATUS_CHOICES,
+        },
+    )
+
+
+@require_leader
+def proposal_review(request, pk):
+    """Proposal detail for reviewers: everyone's scores/comments, your
+    own review form, and the status transition buttons."""
+    from apps.proposals.models import ProposalReview, SessionProposal
+
+    proposal = get_object_or_404(
+        SessionProposal.objects.select_related("user", "chapter", "event_type"), pk=pk
+    )
+    if not request.user.managed_chapter(proposal.chapter):
+        raise PermissionDenied
+
+    my_review = proposal.reviews.filter(reviewer=request.user).first()
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "review":
+            score = int(request.POST.get("score", 0))
+            if 1 <= score <= 5:
+                ProposalReview.objects.update_or_create(
+                    proposal=proposal,
+                    reviewer=request.user,
+                    defaults={"score": score, "comment": request.POST.get("comment", "").strip()},
+                )
+                if proposal.status == SessionProposal.STATUS_SUBMITTED:
+                    proposal.set_status(SessionProposal.STATUS_UNDER_REVIEW)
+                messages.success(request, "Review saved.")
+            else:
+                messages.error(request, "Score must be between 1 and 5.")
+        elif action == "status":
+            new_status = request.POST.get("status")
+            try:
+                proposal.set_status(new_status, note=request.POST.get("note", "").strip())
+                messages.success(request, f"Proposal marked {proposal.get_status_display()} — proposer emailed.")
+            except ValueError:
+                messages.error(request, "Unknown status.")
+        return redirect("leads:proposal_review", pk=proposal.pk)
+
+    return render(
+        request,
+        "leads/proposals/review.html",
+        {
+            "proposal": proposal,
+            "reviews": proposal.reviews.select_related("reviewer").order_by("-updated_at"),
+            "my_review": my_review,
+            "statuses": SessionProposal.STATUS_CHOICES,
+        },
+    )
+
+
+@require_leader
+def speaker_search(request):
+    """Find past speakers by topic tag or name — feeds CFP curation."""
+    q = (request.GET.get("q") or "").strip()
+    speakers = []
+    if q:
+        speakers = (
+            User.objects.filter(
+                Q(event_sessions__tags__name__icontains=q)
+                | Q(event_sessions__name__icontains=q)
+                | Q(name__icontains=q)
+            )
+            .filter(event_sessions__placeholder=False, event_sessions__deleted_at__isnull=True)
+            .distinct()[:50]
+        )
+    return render(request, "leads/proposals/speaker_search.html", {"q": q, "speakers": speakers})

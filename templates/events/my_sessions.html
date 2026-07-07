@@ -34,6 +34,14 @@
         {{ session.start_time }}
         {% if session.start_time > now %}
           <span class="label label-success">Upcoming</span>
+          {% if session.speaker_confirmed_at %}
+            <span class="label label-info">Confirmed</span>
+          {% else %}
+            <form method="post" action="{% url 'events:session_confirm' session.pk %}" style="display:inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-xs btn-warning">Confirm my slot</button>
+            </form>
+          {% endif %}
         {% else %}
           <span class="label label-danger">Done</span>
         {% endif %}

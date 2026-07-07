@@ -309,6 +309,14 @@ class EventSession(TimeStampedModel, SoftDeleteModel):
     video_url = models.URLField(max_length=255, blank=True)
     image = models.ImageField(upload_to="sessions/", blank=True, null=True)
 
+    # Rev 3: additional speakers credited on the session (the FK `user`
+    # stays the primary speaker), and the speaker's explicit "yes, I'll
+    # be there" — unconfirmed slots are flagged to leads.
+    co_speakers = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, blank=True, related_name="co_speaker_sessions"
+    )
+    speaker_confirmed_at = models.DateTimeField(null=True, blank=True)
+
     objects = SoftDeleteQuerySet.as_manager()
 
     class Meta:
@@ -325,6 +333,17 @@ class EventSession(TimeStampedModel, SoftDeleteModel):
 
     def speaker_name(self):
         return self.user.name if self.user_id else ""
+
+    def all_speakers(self):
+        """Primary speaker + co-speakers, primary first."""
+        speakers = [self.user] if self.user_id else []
+        speakers += [u for u in self.co_speakers.all() if u.pk != self.user_id]
+        return speakers
+
+    def confirm_speaker(self):
+        if self.speaker_confirmed_at is None:
+            self.speaker_confirmed_at = timezone.now()
+            self.save(update_fields=["speaker_confirmed_at", "updated_at"])
 
     def is_editable(self):
         """Editable only within EDIT_WINDOW_DAYS of the event end (event.rb)."""

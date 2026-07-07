@@ -50,6 +50,9 @@ urlpatterns = [
     path("venues/<int:pk>/", views.venue_show, name="venue_show"),
     path("venues/<int:pk>/edit/", views.venue_edit, name="venue_edit"),
     path("venues/<int:pk>/delete/", views.venue_delete, name="venue_delete"),
+    path("proposals/", views.proposal_index, name="proposal_index"),
+    path("proposals/<int:pk>/", views.proposal_review, name="proposal_review"),
+    path("speakers/search/", views.speaker_search, name="speaker_search"),
     path("chapters/", views.chapter_index, name="chapter_index"),
     path("chapters/<int:pk>/edit/", views.chapter_edit, name="chapter_edit"),
 ]

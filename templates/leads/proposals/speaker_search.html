@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block page_title %}Speaker search{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h1>Speaker search <small>by topic, talk title, or name</small></h1></div>
+    <form method="get" class="form-inline" style="margin-bottom:16px">
+      <input type="text" name="q" class="form-control" placeholder="e.g. android, forensics, red team" value="{{ q }}" style="min-width:300px">
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+
+    {% if q %}
+    <table class="table table-striped">
+      <thead><tr><th>Speaker</th><th>Talks</th><th>Topics</th></tr></thead>
+      <tbody>
+        {% for speaker in speakers %}
+        <tr>
+          <td><a href="{% url 'accounts:public_profile' speaker.pk %}">{{ speaker.name|default:speaker.email }}</a></td>
+          <td>{{ speaker.speaker_sessions.count }}</td>
+          <td>
+            {% for session in speaker.speaker_sessions|slice:":5" %}
+              {% for tag in session.tags.all %}<span class="label label-default">{{ tag.name }}</span> {% endfor %}
+            {% endfor %}
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="3">No speakers found for "{{ q }}".</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

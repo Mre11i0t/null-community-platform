@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load core_extras %}
+{% block page_title %}Review — {{ proposal.session_topic }}{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <div class="page-header">
+      <h1>{{ proposal.session_topic }} <small>{{ proposal.get_status_display }}</small></h1>
+      <p class="text-muted">
+        by <a href="{% url 'accounts:public_profile' proposal.user.pk %}">{{ proposal.user.name|default:proposal.user.email }}</a>
+        · {{ proposal.chapter.name }} · {{ proposal.event_type.name }} · {{ proposal.created_at|date:"M d, Y" }}
+      </p>
+    </div>
+    <div>{{ proposal.session_description|markdown_html }}</div>
+
+    <hr>
+    <h3>Reviews {% if proposal.average_score %}<small>avg {{ proposal.average_score|floatformat:1 }}/5</small>{% endif %}</h3>
+    {% for review in reviews %}
+      <p><strong>{{ review.reviewer.name|default:review.reviewer.email }}</strong>
+        <span class="label label-info">{{ review.score }}/5</span><br>
+        {{ review.comment|default:"(no comment)" }}</p>
+    {% empty %}<p class="text-muted">No reviews yet.</p>{% endfor %}
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="review">
+      <div class="form-group">
+        <label>Your score</label>
+        <select name="score" class="form-control" style="max-width:120px">
+          {% for i in "12345" %}
+            <option value="{{ i }}"{% if my_review and my_review.score == i|add:0 %} selected{% endif %}>{{ i }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Comment</label>
+        <textarea name="comment" class="form-control" rows="2">{{ my_review.comment|default:"" }}</textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">{% if my_review %}Update{% else %}Submit{% endif %} review</button>
+    </form>
+  </div>
+
+  <div class="col-md-4">
+    <div class="panel panel-default">
+      <div class="panel-heading">Pipeline decision</div>
+      <div class="panel-body">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="status">
+          <div class="form-group">
+            <select name="status" class="form-control">
+              {% for value, label in statuses %}
+                <option value="{{ value }}"{% if proposal.status == value %} selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <input type="text" name="note" class="form-control" placeholder="Optional note to the proposer" maxlength="255">
+          </div>
+          <button type="submit" class="btn btn-warning btn-block">Set status &amp; email proposer</button>
+        </form>
+      </div>
+    </div>
+    <a href="{% url 'leads:proposal_index' %}">← All proposals</a>
+  </div>
+</div>
+{% endblock %}
