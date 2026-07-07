@@ -749,3 +749,64 @@ def webhook_delete(request, pk):
     endpoint.delete()
     messages.success(request, "Endpoint removed.")
     return redirect("leads:webhook_index")
+
+
+# --- Event types (Rev 3 — closes gap #7) --------------------------------------
+
+
+@require_leader
+def event_type_index(request):
+    """Leads can now see and create event types without pinging an
+    admin (original gap #7). Editing/deleting stays admin-only since
+    types are shared across every chapter."""
+    from apps.events.models import EventType
+
+    if request.method == "POST":
+        name = (request.POST.get("name") or "").strip()
+        if name and not EventType.objects.filter(name__iexact=name).exists():
+            EventType.objects.create(
+                name=name,
+                description=request.POST.get("description", "").strip(),
+                max_participant=int(request.POST.get("max_participant") or 10000),
+                public=bool(request.POST.get("public")),
+                registration_required=bool(request.POST.get("registration_required")),
+                invitation_required=bool(request.POST.get("invitation_required")),
+            )
+            messages.success(request, f'Event type "{name}" created.')
+        else:
+            messages.error(request, "Name is required and must be unique.")
+        return redirect("leads:event_type_index")
+
+    return render(
+        request,
+        "leads/event_types/index.html",
+        {"event_types": EventType.objects.order_by("name")},
+    )
+
+
+# --- Notification run log (Rev 3 — closes gap #10) -----------------------------
+
+
+@require_leader
+def notification_log(request):
+    """Read-only view of the notification machinery for the leader's
+    chapters — replaces squinting at the admin-only Resque dashboard
+    (original gap #10)."""
+    from apps.notifications.models import EventAutomaticNotificationTask
+
+    chapters = request.user.managed_chapters()
+    auto_tasks = (
+        EventAutomaticNotificationTask.objects.filter(event__chapter__in=chapters)
+        .select_related("event")
+        .order_by("-created_at")[:100]
+    )
+    mailer_tasks = (
+        EventMailerTask.objects.filter(event__chapter__in=chapters)
+        .select_related("event")
+        .order_by("-created_at")[:50]
+    )
+    return render(
+        request,
+        "leads/notifications/log.html",
+        {"auto_tasks": auto_tasks, "mailer_tasks": mailer_tasks},
+    )

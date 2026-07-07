@@ -263,6 +263,31 @@ if GITHUB_OAUTH_CLIENT_ID:
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
+# Rev 3 email delivery: Mailgun via django-anymail when a key is present
+# (Basic $15/mo · 10k emails covers current volume; see PRD Part 6),
+# otherwise whatever EMAIL_BACKEND the environment set (console in dev).
+MAILGUN_API_KEY = env("MAILGUN_API_KEY", default="")
+if MAILGUN_API_KEY:
+    INSTALLED_APPS.append("anymail")
+    EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"
+    ANYMAIL = {
+        "MAILGUN_API_KEY": MAILGUN_API_KEY,
+        "MAILGUN_SENDER_DOMAIN": env("MAILGUN_SENDER_DOMAIN", default="null.community"),
+        "MAILGUN_API_URL": env("MAILGUN_API_URL", default="https://api.mailgun.net/v3"),
+    }
+
+# Rev 3 broadcast channels (replaces the dead Twitter-via-IFTTT path).
+# Free webhook channels first; X API v2 optional and pay-per-use
+# ($0.015/post, $0.20 with a link — see PRD Part 6). All env-gated.
+DISCORD_WEBHOOK_URL = env("DISCORD_WEBHOOK_URL", default="")
+SLACK_WEBHOOK_URL = env("SLACK_WEBHOOK_URL", default="")
+TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN", default="")
+TELEGRAM_CHAT_ID = env("TELEGRAM_CHAT_ID", default="")
+X_CONSUMER_KEY = env("X_CONSUMER_KEY", default="")
+X_CONSUMER_SECRET = env("X_CONSUMER_SECRET", default="")
+X_ACCESS_TOKEN = env("X_ACCESS_TOKEN", default="")
+X_ACCESS_TOKEN_SECRET = env("X_ACCESS_TOKEN_SECRET", default="")
+
 # reCAPTCHA — used on signup, RSVP, and session comments in the original app
 RECAPTCHA_PUBLIC_KEY = env("RECAPTCHA_PUBLIC_KEY", default="")
 RECAPTCHA_PRIVATE_KEY = env("RECAPTCHA_PRIVATE_KEY", default="")

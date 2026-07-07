@@ -106,19 +106,30 @@ def _event_context(event):
 
 
 def _send_announcement(event):
-    """Ports EventAutomaticNotificationTask#event_announcement."""
+    """Ports EventAutomaticNotificationTask#event_announcement, plus the
+    Rev 3 broadcast fan-out (Discord/Slack/Telegram/X) that replaces the
+    original's IFTTT tweet."""
+    from .broadcast import broadcast
+
     body = render_to_string("notifications/emails/announcement.txt", _event_context(event))
     subject = f"[Announcement] {event.descriptive_name()}"
     for address in settings.NOTIFICATION_ANNOUNCEMENT_ADDRESSES:
         send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [address])
+    broadcast(
+        f"\U0001F4E2 {event.descriptive_name()} — registrations open! {_event_url(event)}"
+    )
 
 
 def _send_event_reminder(event):
-    """Ports EventAutomaticNotificationTask#event_reminder (Reminder1)."""
+    """Ports EventAutomaticNotificationTask#event_reminder (Reminder1),
+    plus the Rev 3 broadcast fan-out."""
+    from .broadcast import broadcast
+
     body = render_to_string("notifications/emails/reminder.txt", _event_context(event))
     subject = f"[Reminder] {event.descriptive_name()}"
     for address in settings.NOTIFICATION_ANNOUNCEMENT_ADDRESSES:
         send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [address])
+    broadcast(f"\u23F0 This week: {event.descriptive_name()} {_event_url(event)}")
 
 
 def _send_speaker_notification(event):

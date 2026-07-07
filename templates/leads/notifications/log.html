@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block page_title %}Notification log{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h1>Notification log <small>your chapters' automatic + mailer runs</small></h1></div>
+
+    <h3>Automatic notifications</h3>
+    <table class="table table-condensed table-striped">
+      <thead><tr><th>When</th><th>Event</th><th>Mode</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for task in auto_tasks %}
+        <tr>
+          <td>{{ task.created_at|date:"M d, H:i" }}</td>
+          <td><a href="{% url 'leads:event_show' task.event.pk %}">{{ task.event.name|truncatechars:40 }}</a></td>
+          <td><code>{{ task.mode }}</code></td>
+          <td>{% if task.executed %}<span class="label label-success">executed</span>{% else %}<span class="label label-warning">pending</span>{% endif %}</td>
+        </tr>
+        {% empty %}<tr><td colspan="4">No automatic notifications yet.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+
+    <h3>Mailer tasks</h3>
+    <table class="table table-condensed table-striped">
+      <thead><tr><th>When</th><th>Event</th><th>Subject</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for task in mailer_tasks %}
+        <tr>
+          <td>{{ task.created_at|date:"M d, H:i" }}</td>
+          <td><a href="{% url 'leads:event_show' task.event.pk %}">{{ task.event.name|truncatechars:30 }}</a></td>
+          <td><a href="{% url 'leads:mailer_task_show' task.event.pk task.pk %}">{{ task.subject|truncatechars:40 }}</a></td>
+          <td>
+            {% if task.executed %}<span class="label label-success">sent</span>
+            {% elif task.ready_for_delivery %}<span class="label label-info">queued</span>
+            {% else %}<span class="label label-default">draft</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="4">No mailer tasks yet.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

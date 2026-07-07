@@ -531,3 +531,74 @@ def test_webhook_lead_ui_add_and_remove(client):
     client.force_login(lead.user)
     client.post(reverse("leads:webhook_delete", args=[endpoint.pk]))
     assert WebhookEndpoint.objects.count() == 0
+
+
+# --- Rev 3 integrations modernization -------------------------------------------
+
+
+def test_broadcast_skips_unconfigured_channels():
+    from apps.notifications.broadcast import broadcast
+
+    assert broadcast("hello world") == []  # nothing configured -> nothing sent
+
+
+def test_broadcast_sends_to_configured_discord(settings, monkeypatch):
+    import requests
+
+    settings.DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/x"
+    calls = []
+
+    monkeypatch.setattr(
+        requests, "post", lambda url, json=None, timeout=None: calls.append((url, json))
+    )
+
+    from apps.notifications.broadcast import broadcast
+
+    assert broadcast("event time!") == ["discord"]
+    assert calls[0][0] == settings.DISCORD_WEBHOOK_URL
+    assert calls[0][1]["content"] == "event time!"
+
+
+def test_announcement_task_fans_out_to_broadcast(settings, monkeypatch):
+    import datetime as dt
+
+    import requests
+    from django.utils import timezone
+
+    from apps.notifications.tasks import _send_announcement
+    from tests.factories import EventFactory
+
+    settings.SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/x"
+    calls = []
+    monkeypatch.setattr(
+        requests, "post", lambda url, json=None, timeout=None, **kw: calls.append((url, json))
+    )
+
+    event = EventFactory(
+        public=True,
+        start_time=timezone.now() + dt.timedelta(days=7),
+        end_time=timezone.now() + dt.timedelta(days=7, hours=2),
+    )
+    _send_announcement(event)
+
+    assert any("hooks.slack.com" in url for url, _ in calls)
+
+
+def test_leads_can_create_event_types_and_see_notification_log(client):
+    from apps.events.models import EventType
+    from tests.factories import ChapterLeadFactory
+
+    lead = ChapterLeadFactory()
+    client.force_login(lead.user)
+
+    client.post(
+        reverse("leads:event_type_index"),
+        {"name": "Hardware Village", "public": "on", "registration_required": "on"},
+    )
+    assert EventType.objects.filter(name="Hardware Village").exists()
+
+    # duplicate rejected
+    client.post(reverse("leads:event_type_index"), {"name": "hardware village"})
+    assert EventType.objects.filter(name__iexact="hardware village").count() == 1
+
+    assert client.get(reverse("leads:notification_log")).status_code == 200
