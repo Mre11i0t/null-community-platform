@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block page_title %}null Community — Chapters{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12 text-center">
+    <div class="page-header">
+      <h1>India's open security community</h1>
+      <p class="lead">Free, community-run security meetups across {{ totals.chapters }} chapters. Find yours.</p>
+    </div>
+  </div>
+</div>
+
+<div class="row text-center" style="margin-bottom:24px">
+  <div class="col-xs-6 col-md-3"><h2 style="margin:0">{{ totals.events }}</h2><p class="text-muted">Events</p></div>
+  <div class="col-xs-6 col-md-3"><h2 style="margin:0">{{ totals.sessions }}</h2><p class="text-muted">Talks</p></div>
+  <div class="col-xs-6 col-md-3"><h2 style="margin:0">{{ totals.speakers }}</h2><p class="text-muted">Speakers</p></div>
+  <div class="col-xs-6 col-md-3"><h2 style="margin:0">{{ totals.registrations }}</h2><p class="text-muted">Registrations</p></div>
+</div>
+
+<div class="row">
+  {% for chapter in chapters %}
+  <div class="col-sm-6 col-md-4">
+    <div class="panel panel-default">
+      <div class="panel-heading"><strong><a href="{{ chapter.site_url }}">null {{ chapter.name }}</a></strong></div>
+      <div class="panel-body">
+        <p class="text-muted">{{ chapter.city }}{% if chapter.state %}, {{ chapter.state }}{% endif %}</p>
+        {% with next_event=chapter.next_upcoming_event %}
+          {% if next_event %}
+            <p><i class="fa fa-calendar"></i> Next: <a href="{{ chapter.site_url }}{{ next_event.get_absolute_url }}">{{ next_event.name|truncatechars:34 }}</a><br>
+            <small>{{ next_event.start_time|date:"D, M d" }}</small></p>
+          {% else %}
+            <p class="text-muted"><i class="fa fa-calendar-o"></i> No event scheduled yet</p>
+          {% endif %}
+        {% endwith %}
+        <a href="{{ chapter.site_url }}" class="btn btn-sm btn-primary">Visit chapter site →</a>
+      </div>
+    </div>
+  </div>
+  {% if forloop.counter|divisibleby:3 %}<div class="clearfix visible-md visible-lg"></div>{% endif %}
+  {% endfor %}
+</div>
+
+<div class="row">
+  <div class="col-md-12 text-center" style="margin:24px 0">
+    <p>No chapter in your city?</p>
+    <a href="{% url 'core:start_chapter' %}" class="btn btn-lg btn-success">Start a chapter</a>
+    &nbsp;<a href="{% url 'core:session_search' %}" class="btn btn-lg btn-default">Browse all talks</a>
+    &nbsp;<a href="{% url 'core:stats_index' %}" class="btn btn-lg btn-default">Community stats</a>
+  </div>
+</div>
+{% endblock %}

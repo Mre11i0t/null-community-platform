@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block page_title %}Talk archive — null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h1>Talk archive <small>every session, every chapter</small></h1></div>
+
+    <form method="get" class="form-inline" style="margin-bottom:16px">
+      <input type="text" name="q" class="form-control" placeholder="Search by title, topic, or tag…" value="{{ q }}" style="min-width:320px">
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+
+    <table class="table table-striped">
+      <thead><tr><th>Talk</th><th>Speaker</th><th>Chapter</th><th>Date</th><th>Resources</th></tr></thead>
+      <tbody>
+        {% for session in page_obj.object_list %}
+        <tr>
+          <td><a href="{{ session.get_absolute_url }}">{{ session.name }}</a></td>
+          <td>{% if session.user_id %}<a href="{% url 'accounts:public_profile' session.user.pk %}">{{ session.speaker_name }}</a>{% endif %}</td>
+          <td>{{ session.event.chapter.name }}</td>
+          <td>{{ session.start_time|date:"M Y" }}</td>
+          <td>
+            {% if session.presentation_url %}<i class="fa fa-file-powerpoint-o"></i>{% endif %}
+            {% if session.video_url %}<i class="fa fa-file-video-o"></i>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No talks found{% if q %} for "{{ q }}"{% endif %}.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <nav>
+      <ul class="pager">
+        {% if page_obj.has_previous %}<li><a href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">← Newer</a></li>{% endif %}
+        {% if page_obj.has_next %}<li><a href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Older →</a></li>{% endif %}
+      </ul>
+    </nav>
+  </div>
+</div>
+{% endblock %}

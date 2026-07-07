@@ -295,7 +295,7 @@ def test_soft_deleted_event_vanishes_from_public_pages_but_stays_in_db(client):
     event.soft_delete()
 
     assert client.get(reverse("events:detail", args=[event.pk])).status_code == 404
-    response = client.get(reverse("core:home"))
+    response = client.get(reverse("core:upcoming"))
     assert event not in response.context["events"]
     assert Event.objects.filter(pk=event.pk).exists()  # still in DB for admin
 

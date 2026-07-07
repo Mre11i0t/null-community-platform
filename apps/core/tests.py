@@ -19,8 +19,10 @@ pytestmark = pytest.mark.django_db
 # --- Home / upcoming / archives ----------------------------------------------
 
 
-def test_home_shows_future_public_events_and_active_chapter_count(client):
-    chapter = ChapterFactory(active=True)
+def test_chapter_home_shows_future_public_events(client):
+    """Rev 3: the event homepage lives on the chapter site; the root
+    host serves the directory instead (tested below)."""
+    chapter = ChapterFactory(active=True, name="Hometest")
     ChapterFactory(active=False)
     future = EventFactory(
         chapter=chapter,
@@ -35,13 +37,51 @@ def test_home_shows_future_public_events_and_active_chapter_count(client):
         end_time=timezone.now() - datetime.timedelta(hours=22),
     )
 
-    response = client.get(reverse("core:home"))
+    response = client.get("/", HTTP_HOST="hometest.localhost")
 
     assert response.status_code == 200
     assert future in response.context["events"]
     assert past not in response.context["events"]
-    assert response.context["active_chapters_count"] == Chapter.objects.filter(active=True).count()
-    assert response.context["active_chapters_count"] == 1
+
+
+def test_root_home_is_the_chapter_directory(client):
+    active = ChapterFactory(active=True)
+    ChapterFactory(active=False)
+
+    response = client.get(reverse("core:home"))
+
+    assert response.status_code == 200
+    assert active in response.context["chapters"]
+    assert response.context["totals"]["chapters"] == 1
+    assert "events" not in response.context  # no aggregated event listing
+
+
+def test_start_chapter_application_emails_admins(client):
+    from django.core import mail
+
+    mail.outbox.clear()
+    response = client.post(
+        reverse("core:start_chapter"),
+        {"name": "Asha", "email": "asha@example.com", "city": "Kochi", "motivation": "Local scene!"},
+    )
+    assert response.status_code == 200
+    assert len(mail.outbox) == 1
+    assert "Kochi" in mail.outbox[0].subject
+    assert "asha@example.com" in mail.outbox[0].body
+
+
+def test_global_session_search_filters_by_text(client):
+    from tests.factories import EventSessionFactory
+
+    hit = EventSessionFactory(name="Advanced Android Forensics")
+    miss = EventSessionFactory(name="Intro to Networking")
+    hit.event.public = True; hit.event.save()
+    miss.event.public = True; miss.event.save()
+
+    response = client.get(reverse("core:session_search"), {"q": "android"})
+    names = [s.name for s in response.context["page_obj"].object_list]
+    assert "Advanced Android Forensics" in names
+    assert "Intro to Networking" not in names
 
 
 def test_archives_paginates_past_events(client):

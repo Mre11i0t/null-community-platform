@@ -10,8 +10,10 @@ from .stats import Stat
 
 
 def home(request):
-    """Mirrors HomeController#index — homepage with stats panels and
-    the upcoming events list.
+    """Chapter host: the chapter's event homepage (mirrors the original
+    HomeController#index, scoped). Root host: the Rev 3 directory —
+    chapter grid + collective stats, deliberately NOT an event listing
+    (PRD Part 0).
 
     NOTE: the original page also rendered a live Google-Maps chapter
     pin map (chapters/_chapter_map_loader + Chapter.geo_locations,
@@ -19,14 +21,87 @@ def home(request):
     geocoding integration that isn't wired up yet, so it is
     intentionally left out here rather than faked — see task #9.
     """
-    events = Event.objects.future_public_events().order_by("start_time")
-    if request.chapter:
-        events = events.filter(chapter=request.chapter)
+    if request.chapter is None:
+        return directory(request)
+    events = Event.objects.future_public_events().filter(chapter=request.chapter).order_by("start_time")
     return render(
         request,
         "home/index.html",
         {"events": events, "active_chapters_count": Chapter.active_chapters().count()},
     )
+
+
+def directory(request):
+    """Root-site landing: every active chapter with its next event, and
+    all-time collective stats across the community."""
+    from django.db.models import Count
+
+    from apps.events.models import EventRegistration, EventSession
+
+    chapters = list(Chapter.active_chapters().order_by("name"))
+    totals = {
+        "chapters": len(chapters),
+        "events": Event.objects.public_events().count(),
+        "sessions": EventSession.objects.alive().filter(placeholder=False).count(),
+        "speakers": EventSession.objects.alive()
+        .filter(placeholder=False)
+        .values("user_id")
+        .distinct()
+        .count(),
+        "registrations": EventRegistration.objects.count(),
+    }
+    return render(request, "home/directory.html", {"chapters": chapters, "totals": totals})
+
+
+def start_chapter(request):
+    """Rev 3: "Start a Chapter" — info page + application form that
+    lands in the platform admins' inbox."""
+    from django.conf import settings
+    from django.core.mail import send_mail
+
+    sent = False
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        email = request.POST.get("email", "").strip()
+        city = request.POST.get("city", "").strip()
+        motivation = request.POST.get("motivation", "").strip()
+        if name and email and city:
+            send_mail(
+                subject=f"[null] New chapter application — {city}",
+                message=(
+                    f"Name: {name}\nEmail: {email}\nCity: {city}\n\n"
+                    f"Why they want to start a chapter:\n{motivation}"
+                ),
+                from_email=None,
+                recipient_list=settings.NOTIFICATION_ADMIN_EVENT_CREATE,
+                fail_silently=True,
+            )
+            sent = True
+    return render(request, "home/start_chapter.html", {"sent": sent})
+
+
+def session_search(request):
+    """Root-site global session archive search (Rev 3): the cross-
+    chapter view of every delivered talk, filterable by text or tag."""
+    from django.core.paginator import Paginator as _Paginator
+
+    from apps.events.models import EventSession
+
+    q = (request.GET.get("q") or "").strip()
+    sessions = (
+        EventSession.objects.alive()
+        .filter(placeholder=False, event__public=True)
+        .select_related("event", "event__chapter", "user")
+        .order_by("-start_time")
+    )
+    if q:
+        from django.db.models import Q as _Q
+
+        sessions = sessions.filter(
+            _Q(name__icontains=q) | _Q(description__icontains=q) | _Q(tags__name__icontains=q)
+        ).distinct()
+    page_obj = _Paginator(sessions, 25).get_page(request.GET.get("page"))
+    return render(request, "home/session_search.html", {"page_obj": page_obj, "q": q})
 
 
 def upcoming(request):
