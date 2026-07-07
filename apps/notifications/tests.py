@@ -3,6 +3,7 @@ import datetime
 import pytest
 from django.conf import settings
 from django.core import mail
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.events.models import Event, EventRegistration
@@ -418,3 +419,115 @@ def test_mailer_test_send_goes_only_to_the_lead(client):
     assert len(mail.outbox) == 1
     assert mail.outbox[0].to == [lead.user.email]
     assert mail.outbox[0].subject.startswith("[TEST]")
+
+
+# --- Rev 3 webhooks ------------------------------------------------------------
+
+
+def _mock_post(monkeypatch, status=200):
+    calls = []
+
+    class FakeResponse:
+        status_code = status
+        text = "ok"
+
+    def fake_post(url, data=None, headers=None, timeout=None):
+        calls.append({"url": url, "data": data, "headers": headers})
+        return FakeResponse()
+
+    import requests
+
+    monkeypatch.setattr(requests, "post", fake_post)
+    return calls
+
+
+def test_event_publish_fires_signed_webhook(monkeypatch):
+    import datetime as dt
+    import hashlib
+    import hmac
+
+    from django.utils import timezone
+
+    from apps.notifications.models import WebhookDelivery, WebhookEndpoint
+    from tests.factories import EventFactory
+
+    calls = _mock_post(monkeypatch)
+    event = EventFactory(
+        public=False,
+        start_time=timezone.now() + dt.timedelta(days=3),
+        end_time=timezone.now() + dt.timedelta(days=3, hours=2),
+    )
+    endpoint = WebhookEndpoint.objects.create(chapter=event.chapter, url="https://example.com/hook")
+    assert calls == []  # not public yet
+
+    event.public = True
+    event.save()
+
+    assert len(calls) == 1
+    body = calls[0]["data"]
+    expected = hmac.new(endpoint.secret.encode(), body.encode(), hashlib.sha256).hexdigest()
+    assert calls[0]["headers"]["X-Null-Signature"] == f"sha256={expected}"
+    assert calls[0]["headers"]["X-Null-Event"] == "event.published"
+
+    delivery = WebhookDelivery.objects.get()
+    assert delivery.kind == "event.published" and delivery.delivered_at is not None
+
+    # saving again without a publish flip fires nothing new
+    event.name = "renamed"
+    event.save()
+    assert len(calls) == 1
+
+
+def test_registration_webhooks_created_and_checked_in(monkeypatch):
+    import datetime as dt
+
+    from django.utils import timezone
+
+    from apps.notifications.models import WebhookEndpoint
+    from tests.factories import EventFactory, EventRegistrationFactory
+
+    calls = _mock_post(monkeypatch)
+    event = EventFactory(
+        public=True,
+        check_in_enabled=True,
+        start_time=timezone.now() + dt.timedelta(hours=1),
+        end_time=timezone.now() + dt.timedelta(hours=4),
+    )
+    WebhookEndpoint.objects.create(chapter=event.chapter, url="https://example.com/hook")
+    calls.clear()  # drop the event.published call
+
+    registration = EventRegistrationFactory(event=event)
+    kinds = [c["headers"]["X-Null-Event"] for c in calls]
+    assert "registration.created" in kinds
+
+    registration.check_in()
+    kinds = [c["headers"]["X-Null-Event"] for c in calls]
+    assert "registration.checked_in" in kinds
+
+
+def test_webhook_lead_ui_add_and_remove(client):
+    from apps.notifications.models import WebhookEndpoint
+    from tests.factories import ChapterLeadFactory
+
+    lead = ChapterLeadFactory()
+    client.force_login(lead.user)
+
+    client.post(
+        reverse("leads:webhook_index"),
+        {"chapter": lead.chapter.pk, "url": "https://hooks.example.com/x"},
+    )
+    endpoint = WebhookEndpoint.objects.get()
+    assert endpoint.chapter == lead.chapter and len(endpoint.secret) == 64
+
+    # http:// rejected
+    client.post(reverse("leads:webhook_index"), {"chapter": lead.chapter.pk, "url": "http://x.com"})
+    assert WebhookEndpoint.objects.count() == 1
+
+    # another chapter's lead can't delete it
+    outsider = ChapterLeadFactory()
+    client.force_login(outsider.user)
+    assert client.post(reverse("leads:webhook_delete", args=[endpoint.pk])).status_code == 403
+
+    client.force_login(lead.user)
+    client.post(reverse("leads:webhook_delete", args=[endpoint.pk]))
+    assert WebhookEndpoint.objects.count() == 0

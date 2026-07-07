@@ -705,3 +705,47 @@ def mailer_task_test_send(request, event_id, pk):
     message.send()
     messages.success(request, f"Test email sent to {request.user.email}.")
     return redirect("leads:mailer_task_show", event_id=event.pk, pk=task.pk)
+
+
+# --- Webhooks (Rev 3) --------------------------------------------------------
+
+
+@require_leader
+def webhook_index(request):
+    from apps.notifications.models import WebhookDelivery, WebhookEndpoint
+
+    chapters = request.user.managed_chapters()
+    endpoints = WebhookEndpoint.objects.filter(chapter__in=chapters).select_related("chapter")
+
+    if request.method == "POST":
+        url = (request.POST.get("url") or "").strip()
+        chapter = chapters.filter(pk=request.POST.get("chapter")).first()
+        if url.startswith("https://") and chapter:
+            endpoint = WebhookEndpoint.objects.create(chapter=chapter, url=url)
+            messages.success(
+                request,
+                f"Endpoint added. Signing secret (save it now): {endpoint.secret}",
+            )
+        else:
+            messages.error(request, "Endpoint must be https:// and belong to your chapter.")
+        return redirect("leads:webhook_index")
+
+    deliveries = WebhookDelivery.objects.filter(endpoint__in=endpoints).order_by("-created_at")[:30]
+    return render(
+        request,
+        "leads/webhooks/index.html",
+        {"endpoints": endpoints, "chapters": chapters, "deliveries": deliveries},
+    )
+
+
+@require_leader
+@require_POST
+def webhook_delete(request, pk):
+    from apps.notifications.models import WebhookEndpoint
+
+    endpoint = get_object_or_404(WebhookEndpoint, pk=pk)
+    if not request.user.managed_chapter(endpoint.chapter):
+        raise PermissionDenied
+    endpoint.delete()
+    messages.success(request, "Endpoint removed.")
+    return redirect("leads:webhook_index")

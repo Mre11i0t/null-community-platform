@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block page_title %}Webhooks{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header"><h1>Webhooks <small>event.published · registration.created · registration.checked_in</small></h1></div>
+    <p class="text-muted">Deliveries are JSON POSTs signed with <code>X-Null-Signature: sha256=HMAC(secret, body)</code>. The secret is shown once, when the endpoint is created.</p>
+
+    <form method="post" class="form-inline" style="margin-bottom:20px">
+      {% csrf_token %}
+      <select name="chapter" class="form-control">
+        {% for chapter in chapters %}<option value="{{ chapter.pk }}">{{ chapter.name }}</option>{% endfor %}
+      </select>
+      <input type="url" name="url" class="form-control" placeholder="https://…" style="min-width:320px" required>
+      <button type="submit" class="btn btn-primary">Add endpoint</button>
+    </form>
+
+    <table class="table table-striped">
+      <thead><tr><th>Chapter</th><th>URL</th><th>Active</th><th></th></tr></thead>
+      <tbody>
+        {% for endpoint in endpoints %}
+        <tr>
+          <td>{{ endpoint.chapter.name }}</td>
+          <td><code>{{ endpoint.url }}</code></td>
+          <td>{% if endpoint.active %}<span class="label label-success">active</span>{% else %}<span class="label label-default">off</span>{% endif %}</td>
+          <td>
+            <form method="post" action="{% url 'leads:webhook_delete' endpoint.pk %}" style="display:inline">
+              {% csrf_token %}<button type="submit" class="btn btn-xs btn-danger">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="4">No endpoints yet.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+
+    <h3>Recent deliveries</h3>
+    <table class="table table-condensed">
+      <thead><tr><th>When</th><th>Kind</th><th>Endpoint</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for delivery in deliveries %}
+        <tr>
+          <td>{{ delivery.created_at|date:"M d, H:i" }}</td>
+          <td><code>{{ delivery.kind }}</code></td>
+          <td>{{ delivery.endpoint.url|truncatechars:40 }}</td>
+          <td>
+            {% if delivery.delivered_at %}<span class="label label-success">{{ delivery.response_status }}</span>
+            {% else %}<span class="label label-danger">{{ delivery.response_status|default:delivery.error|truncatechars:30 }}</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="4">Nothing delivered yet.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

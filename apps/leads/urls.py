@@ -61,6 +61,8 @@ urlpatterns = [
     path("proposals/<int:pk>/", views.proposal_review, name="proposal_review"),
     path("speakers/search/", views.speaker_search, name="speaker_search"),
     path("analytics/", analytics_views.dashboard, name="analytics_dashboard"),
+    path("webhooks/", views.webhook_index, name="webhook_index"),
+    path("webhooks/<int:pk>/delete/", views.webhook_delete, name="webhook_delete"),
     path("chapters/", views.chapter_index, name="chapter_index"),
     path("chapters/<int:pk>/edit/", views.chapter_edit, name="chapter_edit"),
 ]

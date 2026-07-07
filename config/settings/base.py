@@ -236,6 +236,33 @@ FEEDBACK_DELAY_HOURS = env.int("FEEDBACK_DELAY_HOURS", default=6)
 WHATSAPP_API_TOKEN = env("WHATSAPP_API_TOKEN", default="")
 WHATSAPP_PHONE_NUMBER_ID = env("WHATSAPP_PHONE_NUMBER_ID", default="")
 
+# Rev 3 social login (closes gap #5): Google/GitHub via allauth, strictly
+# env-gated — without credentials the provider apps aren't even installed,
+# so no dead buttons and no misconfigured OAuth endpoints.
+GOOGLE_OAUTH_CLIENT_ID = env("GOOGLE_OAUTH_CLIENT_ID", default="")
+GOOGLE_OAUTH_CLIENT_SECRET = env("GOOGLE_OAUTH_CLIENT_SECRET", default="")
+GITHUB_OAUTH_CLIENT_ID = env("GITHUB_OAUTH_CLIENT_ID", default="")
+GITHUB_OAUTH_CLIENT_SECRET = env("GITHUB_OAUTH_CLIENT_SECRET", default="")
+
+SOCIALACCOUNT_PROVIDERS = {}
+if GOOGLE_OAUTH_CLIENT_ID:
+    INSTALLED_APPS.append("allauth.socialaccount.providers.google")
+    SOCIALACCOUNT_PROVIDERS["google"] = {
+        "APP": {"client_id": GOOGLE_OAUTH_CLIENT_ID, "secret": GOOGLE_OAUTH_CLIENT_SECRET},
+        "SCOPE": ["profile", "email"],
+    }
+if GITHUB_OAUTH_CLIENT_ID:
+    INSTALLED_APPS.append("allauth.socialaccount.providers.github")
+    SOCIALACCOUNT_PROVIDERS["github"] = {
+        "APP": {"client_id": GITHUB_OAUTH_CLIENT_ID, "secret": GITHUB_OAUTH_CLIENT_SECRET},
+        "SCOPE": ["user:email"],
+    }
+
+# Trust provider-verified emails: log straight into the matching account
+# instead of creating a duplicate.
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
 # reCAPTCHA — used on signup, RSVP, and session comments in the original app
 RECAPTCHA_PUBLIC_KEY = env("RECAPTCHA_PUBLIC_KEY", default="")
 RECAPTCHA_PRIVATE_KEY = env("RECAPTCHA_PRIVATE_KEY", default="")

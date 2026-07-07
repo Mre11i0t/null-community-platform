@@ -89,3 +89,46 @@ class NotificationPreference(TimeStampedModel):
     def for_user(cls, user):
         prefs, _ = cls.objects.get_or_create(user=user)
         return prefs
+
+
+class WebhookEndpoint(TimeStampedModel):
+    """Rev 3 outbound webhooks: a chapter-registered URL that receives
+    HMAC-signed JSON for platform events, so chapters can build their
+    own automations (Discord bots, attendance boards, ...)."""
+
+    chapter = models.ForeignKey(
+        "chapters.Chapter", on_delete=models.CASCADE, related_name="webhook_endpoints"
+    )
+    url = models.URLField(max_length=500)
+    secret = models.CharField(max_length=64)
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "webhook_endpoints"
+
+    def __str__(self):
+        return f"{self.chapter} → {self.url}"
+
+    def save(self, *args, **kwargs):
+        if not self.secret:
+            import secrets
+
+            self.secret = secrets.token_hex(32)
+        super().save(*args, **kwargs)
+
+
+class WebhookDelivery(TimeStampedModel):
+    """One row per delivery attempt outcome — the visibility layer."""
+
+    endpoint = models.ForeignKey(WebhookEndpoint, on_delete=models.CASCADE, related_name="deliveries")
+    kind = models.CharField(max_length=64)
+    payload = models.JSONField(default=dict)
+    response_status = models.IntegerField(null=True, blank=True)
+    error = models.CharField(max_length=255, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "webhook_deliveries"
+
+    def __str__(self):
+        return f"{self.kind} → {self.endpoint_id} ({self.response_status})"
