@@ -233,3 +233,25 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* --- Landing-page spacing fixes ------------------------------------- */
+/* Big button clusters: give wrapped rows breathing room. */
+.btn-cluster .btn { margin: 4px 6px; }
+
+/* Section headings between rows. */
+.section-title { margin: 32px 0 20px; }
+
+/* Equal-height card rows (md and up): panels stretch to match, action
+   button pins to the bottom instead of relying on min-height hacks. */
+@media (min-width: 768px) {
+  .row-flex { display: flex; flex-wrap: wrap; }
+  .row-flex > [class*="col-"] { display: flex; }
+  .row-flex .panel { display: flex; flex-direction: column; width: 100%; }
+  .row-flex .panel-body { display: flex; flex-direction: column; flex: 1; }
+  .row-flex .panel-body .btn:last-child,
+  .row-flex .panel-body .panel-cta { margin-top: auto; }
+}
+.row-flex .panel-body p { flex: 0 1 auto; }
+
+/* Stat panels: the h1 inside carries heading margins meant for pages. */
+.stat-panel .panel-body h1 { margin: 8px 0; }

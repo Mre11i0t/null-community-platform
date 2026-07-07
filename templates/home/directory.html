@@ -10,14 +10,14 @@
   </div>
 </div>
 
-<div class="row text-center" style="margin-bottom:24px">
+<div class="row text-center" style="margin:8px 0 32px">
   <div class="col-xs-6 col-md-3"><h2 style="margin:0">{{ totals.events }}</h2><p class="text-muted">Events</p></div>
   <div class="col-xs-6 col-md-3"><h2 style="margin:0">{{ totals.sessions }}</h2><p class="text-muted">Talks</p></div>
   <div class="col-xs-6 col-md-3"><h2 style="margin:0">{{ totals.speakers }}</h2><p class="text-muted">Speakers</p></div>
   <div class="col-xs-6 col-md-3"><h2 style="margin:0">{{ totals.registrations }}</h2><p class="text-muted">Registrations</p></div>
 </div>
 
-<div class="row">
+<div class="row row-flex">
   {% for chapter in chapters %}
   <div class="col-sm-6 col-md-4">
     <div class="panel panel-default">
@@ -32,7 +32,7 @@
             <p class="text-muted"><i class="fa fa-calendar-o"></i> No event scheduled yet</p>
           {% endif %}
         {% endwith %}
-        <a href="{{ chapter.site_url }}" class="btn btn-sm btn-primary">Visit chapter site →</a>
+        <a href="{{ chapter.site_url }}" class="btn btn-sm btn-primary panel-cta" style="align-self:flex-start">Visit chapter site →</a>
       </div>
     </div>
   </div>
@@ -41,11 +41,13 @@
 </div>
 
 <div class="row">
-  <div class="col-md-12 text-center" style="margin:24px 0">
-    <p>No chapter in your city?</p>
-    <a href="{% url 'core:start_chapter' %}" class="btn btn-lg btn-success">Start a chapter</a>
-    &nbsp;<a href="{% url 'core:session_search' %}" class="btn btn-lg btn-default">Browse all talks</a>
-    &nbsp;<a href="{% url 'core:stats_index' %}" class="btn btn-lg btn-default">Community stats</a>
+  <div class="col-md-12 text-center" style="margin:32px 0 40px">
+    <p style="margin-bottom:12px">No chapter in your city?</p>
+    <div class="btn-cluster">
+      <a href="{% url 'core:start_chapter' %}" class="btn btn-lg btn-success">Start a chapter</a>
+      <a href="{% url 'core:session_search' %}" class="btn btn-lg btn-default">Browse all talks</a>
+      <a href="{% url 'core:stats_index' %}" class="btn btn-lg btn-default">Community stats</a>
+    </div>
   </div>
 </div>
 {% endblock %}
