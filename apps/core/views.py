@@ -241,3 +241,20 @@ def robots_txt(request):
         f"Sitemap: {_abs(request, '/sitemap.xml')}",
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
+
+
+def leaderboard(request):
+    """Rev 3 gamification: chapter-site leaderboard (points from
+    attendance and talks). 404s on the root site — points are a
+    chapter-community thing."""
+    from django.http import Http404
+
+    from .gamification import chapter_leaderboard
+
+    if request.chapter is None:
+        raise Http404
+    return render(
+        request,
+        "home/leaderboard.html",
+        {"rows": chapter_leaderboard(request.chapter)},
+    )

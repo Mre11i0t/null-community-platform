@@ -137,4 +137,34 @@
     </div>
   </div>
 </div>
+
+<div class="row" id="session_qa">
+  <div class="col-md-12">
+    <h3>Audience Q&amp;A</h3>
+    {% for q in questions %}
+      <p>
+        <form method="post" action="{% url 'events:question_upvote' q.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-xs btn-default" title="Upvote">▲ {{ q.votes_count }}</button>
+        </form>
+        {{ q.question }}
+        <small class="text-muted">— {{ q.user.name|default:"member" }}</small>
+        {% if can_moderate %}
+          <form method="post" action="{% url 'events:question_hide' q.pk %}" style="display:inline">
+            {% csrf_token %}<button type="submit" class="btn btn-xs btn-link text-muted">hide</button>
+          </form>
+        {% endif %}
+      </p>
+    {% empty %}
+      <p class="text-muted">No questions yet.</p>
+    {% endfor %}
+    {% if user.is_authenticated %}
+      <form method="post" action="{% url 'events:question_create' session.pk %}" class="form-inline">
+        {% csrf_token %}
+        <input type="text" name="question" class="form-control" maxlength="500" placeholder="Ask the speaker…" style="min-width:320px" required>
+        <button type="submit" class="btn btn-sm btn-primary">Ask</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

@@ -10,6 +10,7 @@ def public_profile(request, pk):
     speaker_sessions = user.speaker_sessions()
     # Rev 3: topics spoken on (tag cloud) + co-speaker credits
     topics = sorted({tag.name for session in speaker_sessions for tag in session.tags.all()})
+    from apps.core.gamification import user_badges, user_points
     return render(
         request,
         "accounts/public_profile.html",
@@ -20,6 +21,8 @@ def public_profile(request, pk):
             "topics": topics,
             "registered_participation": user.registered_participation(),
             "achievements": user.achievements.all(),
+            "points": user_points(user),
+            "badges": user_badges(user),
         },
     )
 
@@ -159,3 +162,40 @@ def notification_preferences(request):
         prefs.save()
         messages.success(request, "Preferences saved.")
     return render(request, "accounts/notification_preferences.html", {"prefs": prefs})
+
+
+@login_required
+def add_achievement(request):
+    """Rev 3 (part of gap #8): members self-report achievements (bug
+    bounties, OSS, community support) shown on their public profile —
+    previously admin-only data entry."""
+    from django.contrib import messages
+    from django.db import IntegrityError
+    from django.shortcuts import redirect
+
+    from apps.proposals.models import UserAchievement
+
+    if request.method == "POST":
+        achievement_type = request.POST.get("achievement_type", "")
+        info = request.POST.get("info", "").strip()[:255]
+        reference = request.POST.get("reference", "").strip()[:255]
+        if achievement_type in dict(UserAchievement.TYPE_CHOICES) and info and reference:
+            try:
+                UserAchievement.objects.create(
+                    user=request.user,
+                    source=UserAchievement.SOURCE_SELF,
+                    achievement_type=achievement_type,
+                    info=info,
+                    reference=reference,
+                )
+                messages.success(request, "Achievement added to your profile.")
+                return redirect("accounts:public_profile", pk=request.user.pk)
+            except IntegrityError:
+                messages.error(request, "You already added that reference.")
+        else:
+            messages.error(request, "All fields are required.")
+    from django.shortcuts import render as _render
+
+    from apps.proposals.models import UserAchievement as UA
+
+    return _render(request, "accounts/add_achievement.html", {"types": UA.TYPE_CHOICES})

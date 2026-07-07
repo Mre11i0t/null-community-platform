@@ -557,3 +557,63 @@ class EventFeedback(TimeStampedModel):
 
     def __str__(self):
         return f"{self.user} rated {self.event}: {self.rating}"
+
+
+class EventComment(TimeStampedModel):
+    """Rev 3 engagement: pre/post-event discussion thread on the event
+    page itself (session comments already existed; events had nowhere
+    to ask "is parking available?")."""
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="comments")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="event_comments"
+    )
+    body = models.TextField()
+
+    class Meta:
+        db_table = "event_comments"
+
+    def __str__(self):
+        return f"{self.user} on {self.event}"
+
+
+class EventPhoto(TimeStampedModel):
+    """Rev 3 engagement: post-event photo gallery, uploaded by leads."""
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="photos")
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="uploaded_photos"
+    )
+    image = models.ImageField(upload_to="event_photos/")
+    caption = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        db_table = "event_photos"
+
+    def __str__(self):
+        return f"Photo for {self.event}"
+
+
+class SessionQuestion(TimeStampedModel):
+    """Rev 3 live Q&A: audience questions on a session, ranked by
+    upvotes; leads can hide off-topic ones. Server-rendered (reload to
+    see new questions) — fine at meetup scale, no websockets."""
+
+    session = models.ForeignKey(EventSession, on_delete=models.CASCADE, related_name="questions")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="session_questions"
+    )
+    question = models.CharField(max_length=500)
+    is_hidden = models.BooleanField(default=False)
+    upvoters = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, blank=True, related_name="upvoted_questions"
+    )
+
+    class Meta:
+        db_table = "session_questions"
+
+    def __str__(self):
+        return self.question[:50]
+
+    def upvote_count(self):
+        return self.upvoters.count()

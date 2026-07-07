@@ -154,6 +154,54 @@
 </div>
 {% endif %}
 
+<div class="row" id="event_gallery">
+  <div class="col-md-12">
+    {% if event_photos %}
+      <h3>Photos</h3>
+      <div class="row">
+        {% for photo in event_photos %}
+          <div class="col-xs-6 col-md-3">
+            <a href="{{ photo.image.url }}" target="_blank" class="thumbnail">
+              <img src="{{ photo.image.url }}" alt="{{ photo.caption }}">
+            </a>
+            {% if photo.caption %}<p class="text-center"><small>{{ photo.caption }}</small></p>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if can_manage %}
+      <form method="post" action="{% url 'events:event_photo_upload' event.pk %}" enctype="multipart/form-data" class="form-inline" style="margin-bottom:16px">
+        {% csrf_token %}
+        <input type="file" name="image" accept="image/*" required>
+        <input type="text" name="caption" class="form-control" placeholder="Caption (optional)">
+        <button type="submit" class="btn btn-sm btn-default"><i class="fa fa-camera"></i> Add photo</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row" id="event_discussion">
+  <div class="col-md-12">
+    <h3>Discussion</h3>
+    {% for comment in event_comments %}
+      <p><strong><a href="{% url 'accounts:public_profile' comment.user.pk %}">{{ comment.user.name|default:"member" }}</a></strong>
+        <small class="text-muted">{{ comment.created_at|date:"M d, g:i A" }}</small><br>
+        {{ comment.body|linebreaksbr }}</p>
+    {% empty %}
+      <p class="text-muted">No comments yet — questions about the event go here.</p>
+    {% endfor %}
+    {% if user.is_authenticated %}
+      <form method="post" action="{% url 'events:event_comment_create' event.pk %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <textarea name="body" class="form-control" rows="2" maxlength="2000" placeholder="Ask the organizers anything…" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary">Post</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
 <div class="row" id="event_venue">
   <div class="col-md-12">
     <h3>Venue</h3>

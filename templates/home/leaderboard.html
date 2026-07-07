@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block page_title %}Leaderboard — null {{ current_chapter.name }}{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 col-md-offset-2">
+    <div class="page-header"><h1>null {{ current_chapter.name }} leaderboard</h1></div>
+    <p class="text-muted">Attend a meetup: 10 points · co-speak: 25 · deliver a talk: 50.</p>
+
+    <table class="table table-striped">
+      <thead><tr><th width="10%">#</th><th>Member</th><th class="text-right">Points</th></tr></thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td><a href="{% url 'accounts:public_profile' row.user.pk %}">{{ row.user.name|default:"member" }}</a></td>
+          <td class="text-right"><strong>{{ row.points }}</strong></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">No points earned yet — attend the next meetup!</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

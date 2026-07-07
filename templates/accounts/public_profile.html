@@ -17,6 +17,10 @@
     <div class="row">
       <div class="col-xs-6"><span style="font-size:2em;">{{ registered_participation.count }}</span><br>Attended</div>
       <div class="col-xs-6"><span style="font-size:2em;">{{ speaker_sessions.count }}</span><br>Delivered</div>
+      <div class="col-xs-12" style="margin-top:8px">
+        <span class="label label-primary" style="font-size:1em">{{ points }} pts</span>
+        {% for badge in badges %}<span class="label label-warning" style="font-size:1em">{{ badge.label }}</span> {% endfor %}
+      </div>
       {% if topics %}
       <div class="col-xs-12" style="margin-top:8px">
         {% for topic in topics %}<span class="label label-default">{{ topic }}</span> {% endfor %}

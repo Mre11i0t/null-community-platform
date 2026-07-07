@@ -21,7 +21,15 @@ def detail(request, pk):
     return render(
         request,
         "events/detail.html",
-        {"event": event, "sessions": sessions, "user_registration": user_registration},
+        {
+            "event": event,
+            "sessions": sessions,
+            "user_registration": user_registration,
+            "event_comments": event.comments.select_related("user").order_by("created_at"),
+            "event_photos": event.photos.order_by("-created_at"),
+            "can_manage": request.user.is_authenticated
+            and request.user.managed_chapter(event.chapter),
+        },
     )
 
 
@@ -42,6 +50,14 @@ def session_detail(request, pk):
         vote = SessionVote.objects.filter(session=session, user=request.user).first()
         user_vote = "up" if vote and vote.is_upvote else "down" if vote else None
 
+    from django.db.models import Count
+
+    questions = (
+        session.questions.filter(is_hidden=False)
+        .select_related("user")
+        .annotate(votes_count=Count("upvoters"))
+        .order_by("-votes_count", "created_at")
+    )
     return render(
         request,
         "events/session_detail.html",
@@ -50,6 +66,9 @@ def session_detail(request, pk):
             "comments": comments,
             "comment_form": EventSessionCommentForm(),
             "user_vote": user_vote,
+            "questions": questions,
+            "can_moderate": request.user.is_authenticated
+            and request.user.managed_chapter(session.event.chapter),
         },
     )
 
@@ -368,3 +387,88 @@ def event_feedback(request, event_id):
             return redirect("events:detail", pk=event.pk)
         messages.error(request, "Pick a rating between 1 and 5.")
     return render(request, "events/feedback.html", {"event": event, "existing": existing})
+
+
+# --- Rev 3 engagement --------------------------------------------------------
+
+
+@login_required
+def event_comment_create(request, event_id):
+    """Discussion thread on the event page (pre-event Q&A)."""
+    from .models import EventComment
+
+    event = get_object_or_404(Event.objects.alive(), pk=event_id)
+    if request.method == "POST":
+        body = (request.POST.get("body") or "").strip()
+        if body:
+            EventComment.objects.create(event=event, user=request.user, body=body[:2000])
+            messages.success(request, "Comment posted.")
+    return redirect("events:detail", pk=event.pk)
+
+
+@login_required
+def event_photo_upload(request, event_id):
+    """Leads add post-event photos to the gallery."""
+    from .models import EventPhoto
+
+    event = get_object_or_404(Event.objects.alive(), pk=event_id)
+    if not request.user.managed_chapter(event.chapter):
+        from django.http import Http404
+
+        raise Http404
+    if request.method == "POST" and request.FILES.get("image"):
+        EventPhoto.objects.create(
+            event=event,
+            uploaded_by=request.user,
+            image=request.FILES["image"],
+            caption=request.POST.get("caption", "").strip()[:255],
+        )
+        messages.success(request, "Photo added to the gallery.")
+    return redirect("events:detail", pk=event.pk)
+
+
+@login_required
+def question_create(request, pk):
+    """Audience Q&A: post a question on a session."""
+    from .models import SessionQuestion
+
+    session = get_object_or_404(EventSession.objects.alive(), pk=pk)
+    if request.method == "POST":
+        text = (request.POST.get("question") or "").strip()
+        if text:
+            question = SessionQuestion.objects.create(
+                session=session, user=request.user, question=text[:500]
+            )
+            question.upvoters.add(request.user)  # your own question starts at 1
+            messages.success(request, "Question submitted.")
+    return redirect("events:session_detail", pk=session.pk)
+
+
+@login_required
+def question_upvote(request, pk):
+    from .models import SessionQuestion
+
+    question = get_object_or_404(SessionQuestion, pk=pk, is_hidden=False)
+    if request.method == "POST":
+        if question.upvoters.filter(pk=request.user.pk).exists():
+            question.upvoters.remove(request.user)
+        else:
+            question.upvoters.add(request.user)
+    return redirect("events:session_detail", pk=question.session_id)
+
+
+@login_required
+def question_hide(request, pk):
+    """Moderation: leads of the owning chapter hide off-topic questions."""
+    from django.http import Http404
+
+    from .models import SessionQuestion
+
+    question = get_object_or_404(SessionQuestion.objects.select_related("session__event"), pk=pk)
+    if not request.user.managed_chapter(question.session.event.chapter):
+        raise Http404
+    if request.method == "POST":
+        question.is_hidden = True
+        question.save(update_fields=["is_hidden", "updated_at"])
+        messages.info(request, "Question hidden.")
+    return redirect("events:session_detail", pk=question.session_id)

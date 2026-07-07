@@ -677,3 +677,124 @@ def test_star_toggle_and_my_schedule(client):
     client.post(reverse("events:session_star", args=[session.pk]))
     response = client.get(reverse("events:my_schedule"))
     assert len(response.context["stars"]) == 0
+
+
+# --- Rev 3 engagement ----------------------------------------------------------
+
+
+def test_event_discussion_thread(client):
+    event = EventFactory(public=True)
+    user = UserFactory()
+    client.force_login(user)
+
+    client.post(reverse("events:event_comment_create", args=[event.pk]), {"body": "Parking nearby?"})
+    response = client.get(reverse("events:detail", args=[event.pk]))
+    assert any(c.body == "Parking nearby?" for c in response.context["event_comments"])
+
+
+def test_photo_upload_leads_only(client):
+    import io
+
+    from PIL import Image
+
+    from tests.factories import ChapterLeadFactory
+
+    event = EventFactory(public=True)
+
+    def png():
+        buf = io.BytesIO()
+        Image.new("RGB", (4, 4)).save(buf, format="PNG")
+        buf.seek(0)
+        buf.name = "photo.png"
+        return buf
+
+    stranger = UserFactory()
+    client.force_login(stranger)
+    client.post(reverse("events:event_photo_upload", args=[event.pk]), {"image": png()})
+    assert event.photos.count() == 0
+
+    lead = ChapterLeadFactory(chapter=event.chapter)
+    client.force_login(lead.user)
+    client.post(
+        reverse("events:event_photo_upload", args=[event.pk]),
+        {"image": png(), "caption": "Group shot"},
+    )
+    assert event.photos.count() == 1
+
+
+def test_session_qa_post_upvote_and_moderation(client):
+    from apps.events.models import SessionQuestion
+    from tests.factories import ChapterLeadFactory
+
+    session = EventSessionFactory()
+    asker = UserFactory()
+    client.force_login(asker)
+    client.post(
+        reverse("events:question_create", args=[session.pk]), {"question": "Slides later?"}
+    )
+    question = SessionQuestion.objects.get()
+    assert question.upvote_count() == 1  # own upvote
+
+    voter = UserFactory()
+    client.force_login(voter)
+    client.post(reverse("events:question_upvote", args=[question.pk]))
+    assert question.upvote_count() == 2
+    client.post(reverse("events:question_upvote", args=[question.pk]))  # toggle off
+    assert question.upvote_count() == 1
+
+    # moderation is lead-only
+    client.post(reverse("events:question_hide", args=[question.pk]))
+    question.refresh_from_db()
+    assert not question.is_hidden
+
+    lead = ChapterLeadFactory(chapter=session.event.chapter)
+    client.force_login(lead.user)
+    client.post(reverse("events:question_hide", args=[question.pk]))
+    question.refresh_from_db()
+    assert question.is_hidden
+
+    response = client.get(reverse("events:session_detail", args=[session.pk]))
+    assert question not in response.context["questions"]
+
+
+def test_gamification_points_badges_and_leaderboard(client):
+    from apps.core.gamification import user_badges, user_points
+
+    chapter_event = EventFactory(
+        public=True,
+        start_time=timezone.now() - datetime.timedelta(days=3),
+        end_time=timezone.now() - datetime.timedelta(days=3, hours=-2),
+    )
+    speaker = UserFactory()
+    EventSessionFactory(event=chapter_event, user=speaker, placeholder=False)
+    registration = EventRegistrationFactory(event=chapter_event, user=speaker)
+    registration.set_state(EventRegistration.STATE_CONFIRMED)
+
+    assert user_points(speaker) == 60  # 50 talk + 10 attended
+    assert any(b["slug"] == "first-talk" for b in user_badges(speaker))
+
+    sub = chapter_event.chapter.subdomain
+    response = client.get("/leaderboard", HTTP_HOST=f"{sub}.localhost")
+    assert response.status_code == 200
+    assert response.context["rows"][0]["user"] == speaker
+
+    # leaderboard is chapter-site only
+    assert client.get("/leaderboard").status_code == 404
+
+
+def test_member_self_reports_achievement(client):
+    from apps.proposals.models import UserAchievement
+
+    user = UserFactory()
+    client.force_login(user)
+    response = client.post(
+        reverse("accounts:add_achievement"),
+        {
+            "achievement_type": UserAchievement.TYPE_BUG_BOUNTY,
+            "info": "Bounty from ExampleCorp",
+            "reference": "https://example.com/hof",
+        },
+    )
+    assert response.status_code == 302
+    achievement = UserAchievement.objects.get(user=user)
+    assert achievement.source == UserAchievement.SOURCE_SELF
