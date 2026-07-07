@@ -64,6 +64,12 @@
   <div class="col-md-12">
     <div class="reaction">
       {% if user.is_authenticated %}
+      {% if user.is_authenticated %}
+      <form method="post" action="{% url 'events:session_star' session.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-link text-warning" title="Add to my schedule"><i class="fa fa-star"></i> Star</button>
+      </form>
+      {% endif %}
       <form method="post" action="{% url 'events:session_like' session.pk %}" style="display:inline;">
         {% csrf_token %}
         <button type="submit" class="btn btn-link {% if user_vote == 'up' %}text-primary{% else %}text-muted{% endif %}">

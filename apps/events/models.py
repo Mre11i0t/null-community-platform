@@ -508,3 +508,22 @@ class EventRegistration(TimeStampedModel):
             ).count()
             + 1
         )
+
+
+class StarredSession(TimeStampedModel):
+    """Rev 3 personal agenda: a member stars sessions to build their
+    own schedule (my_schedule view + ICS feed)."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="starred_sessions"
+    )
+    session = models.ForeignKey(EventSession, on_delete=models.CASCADE, related_name="stars")
+
+    class Meta:
+        db_table = "starred_sessions"
+        constraints = [
+            models.UniqueConstraint(fields=["user", "session"], name="one_star_per_session"),
+        ]
+
+    def __str__(self):
+        return f"{self.user} ★ {self.session}"

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block page_title %}My Schedule - null Community{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h2>My Schedule
+        <small>Sessions I've starred</small>
+        <span class="pull-right">
+          <a href="{% url 'events:my_schedule_ics' %}" class="btn btn-default"><i class="fa fa-calendar"></i> Subscribe (.ics)</a>
+        </span>
+      </h2>
+    </div>
+  </div>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-condensed">
+    <tr><th width="35%">Session</th><th width="20%">Speaker</th><th width="25%">Event</th><th width="20%">When</th></tr>
+    {% for star in stars %}
+    <tr>
+      <td><a href="{% url 'events:session_detail' star.session.pk %}">{{ star.session.name|truncatechars:45 }}</a></td>
+      <td>{{ star.session.speaker_name }}</td>
+      <td><a href="{% url 'events:detail' star.session.event.pk %}">{{ star.session.event.name|truncatechars:35 }}</a></td>
+      <td>
+        {{ star.session.start_time|date:"M d, g:i A" }}
+        {% if star.session.start_time > now %}<span class="label label-success">Upcoming</span>{% endif %}
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4">Nothing starred yet — hit the ★ on any session page.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

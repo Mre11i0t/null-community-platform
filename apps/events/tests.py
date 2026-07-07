@@ -655,3 +655,25 @@ def test_approval_queue_approve_and_reject(client):
     assert reject_me.state == EventRegistration.STATE_NOT_ATTENDING
     assert reject_me.review_note == "Full house this time"
     assert len(mail.outbox) == 2
+
+
+# --- Rev 3 personal agenda ---------------------------------------------------
+
+
+def test_star_toggle_and_my_schedule(client):
+    session = EventSessionFactory(name="Starrable Talk")
+    user = UserFactory()
+    client.force_login(user)
+
+    client.post(reverse("events:session_star", args=[session.pk]))
+    response = client.get(reverse("events:my_schedule"))
+    assert any(star.session == session for star in response.context["stars"])
+
+    ics = client.get(reverse("events:my_schedule_ics"))
+    assert ics["Content-Type"] == "text/calendar"
+    assert "Starrable Talk" in ics.content.decode()
+
+    # toggle off
+    client.post(reverse("events:session_star", args=[session.pk]))
+    response = client.get(reverse("events:my_schedule"))
+    assert len(response.context["stars"]) == 0

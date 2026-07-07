@@ -269,3 +269,69 @@ def session_confirm(request, pk):
         session.confirm_speaker()
         messages.success(request, f'Slot confirmed for "{session.name}" — thank you!')
     return redirect("events:my_sessions")
+
+
+@login_required
+def session_star(request, pk):
+    """Toggle a star (personal agenda)."""
+    from .models import StarredSession
+
+    session = get_object_or_404(EventSession.objects.alive(), pk=pk)
+    if request.method == "POST":
+        star, created = StarredSession.objects.get_or_create(user=request.user, session=session)
+        if not created:
+            star.delete()
+            messages.info(request, "Removed from your schedule.")
+        else:
+            messages.success(request, "Added to your schedule.")
+    return redirect("events:session_detail", pk=session.pk)
+
+
+@login_required
+def my_schedule(request):
+    """The member's starred sessions, upcoming first."""
+    from .models import StarredSession
+
+    stars = (
+        StarredSession.objects.filter(user=request.user, session__deleted_at__isnull=True)
+        .select_related("session", "session__event", "session__event__chapter", "session__user")
+        .order_by("session__start_time")
+    )
+    return render(
+        request,
+        "events/my_schedule.html",
+        {"stars": stars, "now": timezone.now()},
+    )
+
+
+@login_required
+def my_schedule_ics(request):
+    """ICS of the member's starred sessions — subscribable."""
+    from icalendar import Calendar, Event as IcsEvent
+    from icalendar import vText
+
+    from django.http import HttpResponse
+
+    from .models import StarredSession
+
+    cal = Calendar()
+    cal.add("x-wr-calname", "My null schedule")
+    cal.add("version", "2.0")
+    cal.add("prodid", "-//null Community Platform//null.community//")
+    stars = StarredSession.objects.filter(
+        user=request.user, session__deleted_at__isnull=True
+    ).select_related("session", "session__event", "session__event__venue")
+    for star in stars:
+        session = star.session
+        ics = IcsEvent()
+        ics["uid"] = f"swachalit-session-{session.pk}"
+        ics.add("summary", session.name)
+        ics.add("dtstart", session.start_time)
+        ics.add("dtend", session.end_time)
+        ics.add("location", vText(session.event.venue.name))
+        cal.add_component(ics)
+    return HttpResponse(
+        cal.to_ical(),
+        content_type="text/calendar",
+        headers={"Content-Disposition": 'inline; filename="my-schedule.ics"'},
+    )
