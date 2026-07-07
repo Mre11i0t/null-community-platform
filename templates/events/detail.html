@@ -1,6 +1,37 @@
 {% extends "base.html" %}
 {% load static core_extras %}
 {% block page_title %}{{ event.descriptive_name }}{% endblock %}
+{% block title %}{{ event.descriptive_name }}{% endblock %}
+{% block og_type %}event{% endblock %}
+{% block og_title %}{{ event.descriptive_name }}{% endblock %}
+{% block og_description %}{{ event.description|striptags|truncatechars:200 }}{% endblock %}
+{% block canonical %}<link rel="canonical" href="{{ event.chapter.site_url }}{{ event.get_absolute_url }}">{% endblock %}
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Event",
+  "name": "{{ event.descriptive_name|escapejs }}",
+  "startDate": "{{ event.start_time|date:'c' }}",
+  "endDate": "{{ event.end_time|date:'c' }}",
+  "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+  "eventStatus": "https://schema.org/EventScheduled",
+  "location": {
+    "@type": "Place",
+    "name": "{{ event.venue.name|escapejs }}",
+    "address": "{{ event.venue.address|striptags|escapejs }}"
+  },
+  "organizer": {
+    "@type": "Organization",
+    "name": "null {{ event.chapter.name|escapejs }}",
+    "url": "{{ event.chapter.site_url }}"
+  },
+  "isAccessibleForFree": true,
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "INR", "availability": "https://schema.org/InStock", "url": "{{ event.chapter.site_url }}{{ event.get_absolute_url }}"},
+  "description": "{{ event.description|striptags|truncatechars:400|escapejs }}"
+}
+</script>
+{% endblock %}
 {% block content %}
 <div class="row">
   <div class="col-md-12">

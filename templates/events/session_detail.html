@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% load core_extras %}
 {% block page_title %}{{ session.name }}{% endblock %}
+{% block og_title %}{{ session.name }}{% endblock %}
+{% block og_description %}{{ session.description|striptags|truncatechars:200 }}{% endblock %}
+{% block canonical %}<link rel="canonical" href="{{ session.event.chapter.site_url }}{{ session.get_absolute_url }}">{% endblock %}
 {% block content %}
 <div class="row">
   <div class="col-md-12">

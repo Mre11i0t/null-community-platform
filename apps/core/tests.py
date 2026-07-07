@@ -122,3 +122,43 @@ def test_stats_show_filters_by_chapter(client):
 
     assert response.context["chapter"] == chapter_a
     assert response.context["stat"].events().count() == 1
+
+
+# --- Rev 3 SEO ---------------------------------------------------------------
+
+
+def test_sitemap_scopes_to_chapter_host(client):
+    from tests.factories import ChapterFactory, EventFactory
+
+    delhi = ChapterFactory(name="Delhi")
+    goa = ChapterFactory(name="Goa")
+    future = timezone.now() + datetime.timedelta(days=3)
+    ours = EventFactory(chapter=delhi, public=True, start_time=future, end_time=future + datetime.timedelta(hours=2))
+    theirs = EventFactory(chapter=goa, public=True, start_time=future, end_time=future + datetime.timedelta(hours=2))
+
+    body = client.get("/sitemap.xml", HTTP_HOST="delhi.localhost").content.decode()
+    assert f"/events/{ours.pk}/" in body
+    assert f"/events/{theirs.pk}/" not in body
+    assert "delhi.localhost" in body
+
+    root_body = client.get("/sitemap.xml").content.decode()
+    assert f"/events/{ours.pk}/" in root_body and f"/events/{theirs.pk}/" in root_body
+
+
+def test_robots_txt_points_to_host_sitemap(client):
+    body = client.get("/robots.txt").content.decode()
+    assert "Sitemap: http://testserver/sitemap.xml" in body
+    assert "Disallow: /admin/" in body
+
+
+def test_event_page_has_json_ld_and_canonical(client):
+    from tests.factories import EventFactory
+
+    future = timezone.now() + datetime.timedelta(days=3)
+    event = EventFactory(public=True, start_time=future, end_time=future + datetime.timedelta(hours=2))
+
+    body = client.get(reverse("events:detail", args=[event.pk])).content.decode()
+    assert '"@type": "Event"' in body
+    assert 'rel="canonical"' in body
+    assert event.chapter.site_url() in body
+    assert 'property="og:title"' in body

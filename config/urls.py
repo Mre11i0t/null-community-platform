@@ -4,12 +4,15 @@ from django.contrib import admin
 from django.urls import include, path
 
 from apps.chapters import views as chapter_views
+from apps.core import views as core_views
 from apps.events import views as event_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     # Caddy on-demand-TLS gate — must stay cheap and unauthenticated.
     path("domains/check", chapter_views.domain_check, name="domain_check"),
+    path("sitemap.xml", core_views.sitemap_xml, name="sitemap"),
+    path("robots.txt", core_views.robots_txt, name="robots"),
     path("accounts/", include("allauth.urls")),
     path("api-v2/", include("apps.api.urls")),
     path("chapters/", include("apps.chapters.urls")),

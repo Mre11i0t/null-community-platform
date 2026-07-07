@@ -105,3 +105,64 @@ def stats_show(request, year):
             "years": range(timezone.now().year, 2009, -1),
         },
     )
+
+
+def _abs(request, path):
+    return f"{request.scheme}://{request.get_host()}{path}"
+
+
+def sitemap_xml(request):
+    """Rev 3 chapter-scoped SEO: each chapter site serves a sitemap of
+    ITS OWN events/sessions/pages (so delhi.null.community ranks for
+    Delhi), while the root site maps the directory-level pages. Hand-
+    rolled rather than django.contrib.sitemaps because the sites
+    framework assumes one canonical domain — we have one per chapter."""
+    from django.http import HttpResponse
+
+    from apps.content.models import Page
+    from apps.events.models import EventSession
+
+    urls = [(_abs(request, "/"), "daily")]
+    chapter = request.chapter
+
+    if chapter:
+        events = Event.objects.public_events().filter(chapter=chapter)
+        sessions = EventSession.objects.alive().filter(
+            event__chapter=chapter, event__public=True, placeholder=False
+        )
+        urls += [(_abs(request, "/upcoming"), "daily"), (_abs(request, "/archives"), "weekly")]
+    else:
+        events = Event.objects.public_events()
+        sessions = EventSession.objects.alive().filter(event__public=True, placeholder=False)
+        urls += [
+            (_abs(request, "/chapters/"), "weekly"),
+            (_abs(request, "/stats"), "monthly"),
+            (_abs(request, "/about"), "monthly"),
+        ]
+
+    urls += [(_abs(request, e.get_absolute_url()), "weekly") for e in events]
+    urls += [(_abs(request, s.get_absolute_url()), "monthly") for s in sessions]
+    urls += [
+        (_abs(request, f"/pages/{page.slug}"), "monthly")
+        for page in Page.published_pages()
+    ]
+
+    body = ['<?xml version="1.0" encoding="UTF-8"?>']
+    body.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+    for loc, freq in urls:
+        body.append(f"<url><loc>{loc}</loc><changefreq>{freq}</changefreq></url>")
+    body.append("</urlset>")
+    return HttpResponse("\n".join(body), content_type="application/xml")
+
+
+def robots_txt(request):
+    from django.http import HttpResponse
+
+    lines = [
+        "User-agent: *",
+        "Disallow: /admin/",
+        "Disallow: /leads/",
+        "Disallow: /accounts/",
+        f"Sitemap: {_abs(request, '/sitemap.xml')}",
+    ]
+    return HttpResponse("\n".join(lines), content_type="text/plain")
