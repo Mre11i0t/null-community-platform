@@ -14,6 +14,8 @@ urlpatterns = [
     path("start-a-chapter", views.start_chapter, name="start_chapter"),
     path("leaderboard", views.leaderboard, name="leaderboard"),
     path("sessions/", views.session_search, name="session_search"),
+    # legacy Rails path
+    path("event_sessions", views.session_search),
     path("stats", views.stats_index, name="stats_index"),
     path("stats/<int:year>", views.stats_show, name="stats_show"),
 ]

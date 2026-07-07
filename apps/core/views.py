@@ -88,6 +88,8 @@ def session_search(request):
     from apps.events.models import EventSession
 
     q = (request.GET.get("q") or "").strip()
+    tag = (request.GET.get("tag") or "").strip()
+    has_reference = request.GET.get("has_reference")
     sessions = (
         EventSession.objects.alive()
         .filter(placeholder=False, event__public=True)
@@ -100,8 +102,19 @@ def session_search(request):
         sessions = sessions.filter(
             _Q(name__icontains=q) | _Q(description__icontains=q) | _Q(tags__name__icontains=q)
         ).distinct()
+    if tag:
+        sessions = sessions.filter(tags__name__iexact=tag).distinct()
+    if has_reference:
+        # original's has_reference filter: session has slides or video
+        from django.db.models import Q as _Q
+
+        sessions = sessions.exclude(_Q(presentation_url="") & _Q(video_url=""))
     page_obj = _Paginator(sessions, 25).get_page(request.GET.get("page"))
-    return render(request, "home/session_search.html", {"page_obj": page_obj, "q": q})
+    return render(
+        request,
+        "home/session_search.html",
+        {"page_obj": page_obj, "q": q, "tag": tag, "has_reference": has_reference},
+    )
 
 
 def upcoming(request):

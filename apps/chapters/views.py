@@ -62,3 +62,40 @@ def calendar_ics(request, pk):
         content_type="text/calendar",
         headers={"Content-Disposition": 'inline; filename="calendar.ics"'},
     )
+
+
+def leaders_json(request, pk):
+    """Ports ChaptersController#leaders — JSON list of a chapter's
+    active leads (used by external integrations)."""
+    from django.http import JsonResponse
+
+    chapter = get_object_or_404(Chapter, pk=pk)
+    return JsonResponse(
+        [
+            {"id": lead.pk, "name": lead.name, "profile_url": lead.get_absolute_url()}
+            for lead in chapter.leads()
+        ],
+        safe=False,
+    )
+
+
+def upcoming_events_json(request, pk):
+    """Ports ChaptersController#upcoming_events — JSON feed of the
+    chapter's next public events."""
+    from django.http import JsonResponse
+
+    chapter = get_object_or_404(Chapter, pk=pk)
+    return JsonResponse(
+        [
+            {
+                "id": event.pk,
+                "name": event.name,
+                "descriptive_name": event.descriptive_name(),
+                "start_time": event.start_time.isoformat(),
+                "end_time": event.end_time.isoformat(),
+                "url": f"{chapter.site_url()}{event.get_absolute_url()}",
+            }
+            for event in chapter.upcoming_events().order_by("start_time")
+        ],
+        safe=False,
+    )

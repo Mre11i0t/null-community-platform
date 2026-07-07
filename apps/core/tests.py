@@ -202,3 +202,110 @@ def test_event_page_has_json_ld_and_canonical(client):
     assert 'rel="canonical"' in body
     assert event.chapter.site_url() in body
     assert 'property="og:title"' in body
+
+
+# --- Rails-parity closures (Rev 3) --------------------------------------------
+
+
+def test_chapter_json_endpoints(client):
+    from tests.factories import ChapterLeadFactory
+
+    lead = ChapterLeadFactory()
+    chapter = lead.chapter
+    future = timezone.now() + datetime.timedelta(days=4)
+    event = EventFactory(chapter=chapter, public=True, start_time=future, end_time=future + datetime.timedelta(hours=2))
+
+    leaders = client.get(f"/chapters/{chapter.pk}/leaders").json()
+    assert any(row["id"] == lead.user.pk for row in leaders)
+
+    events = client.get(f"/chapters/{chapter.pk}/upcoming_events").json()
+    assert events[0]["id"] == event.pk
+    assert chapter.subdomain in events[0]["url"]
+
+
+def test_event_name_alias_redirects_to_canonical(client):
+    future = timezone.now() + datetime.timedelta(days=4)
+    event = EventFactory(name="Monthly Meetup July", public=True, start_time=future, end_time=future + datetime.timedelta(hours=2))
+    assert event.slug == "monthly-meetup-july"
+
+    response = client.get(f"/event/{event.slug}")
+    assert response.status_code == 302
+    assert response.url == f"/events/{event.pk}/"
+
+    assert client.get("/event/nonexistent-thing").status_code == 404
+
+
+def test_session_archive_filters(client):
+    from tests.factories import EventSessionFactory
+
+    with_slides = EventSessionFactory(name="Talk With Slides", presentation_url="https://slides.example.com/x")
+    without = EventSessionFactory(name="Talk Without Anything")
+    for session in (with_slides, without):
+        session.event.public = True
+        session.event.save()
+    with_slides.tags.add("redteam")
+
+    names = [s.name for s in client.get("/sessions/", {"has_reference": "1"}).context["page_obj"].object_list]
+    assert "Talk With Slides" in names and "Talk Without Anything" not in names
+
+    names = [s.name for s in client.get("/sessions/", {"tag": "redteam"}).context["page_obj"].object_list]
+    assert names == ["Talk With Slides"]
+
+    # legacy Rails path serves the same view
+    assert client.get("/event_sessions").status_code == 200
+
+
+def test_page_access_permissions_enforced(client):
+    from apps.content.models import Page, PageAccessPermission
+
+    page = Page.objects.create(
+        name="CoC", description="d", navigation_name="CoC", title="Code of Conduct",
+        content="<p>be nice</p>", published=True,
+    )
+    edit_url = f"/pages/{page.slug}/edit/"
+
+    nobody = UserFactory()
+    client.force_login(nobody)
+    assert client.get(edit_url).status_code == 404
+
+    reader = UserFactory()
+    PageAccessPermission.objects.create(page=page, user=reader, permission_type=PageAccessPermission.READ_ONLY)
+    client.force_login(reader)
+    response = client.get(edit_url)
+    assert response.status_code == 200 and not response.context["can_write"]
+    client.post(edit_url, {"title": "Hacked", "content": "x"})
+    page.refresh_from_db()
+    assert page.title == "Code of Conduct"  # read-only can't write
+
+    writer = UserFactory()
+    PageAccessPermission.objects.create(page=page, user=writer, permission_type=PageAccessPermission.READ_WRITE)
+    client.force_login(writer)
+    client.post(edit_url, {"title": "Code of Conduct v2", "content": "<p>be nicer</p>"})
+    page.refresh_from_db()
+    assert page.title == "Code of Conduct v2"
+
+
+def test_password_change_invalidates_api_tokens(client):
+    from allauth.account.signals import password_changed
+
+    from apps.accounts.models import UserApiToken
+
+    user = UserFactory(password="oldpass-123456")
+    token = UserApiToken.objects.create(user=user, active=True)
+
+    # fire the allauth signal the change-password view emits
+    password_changed.send(sender=user.__class__, request=None, user=user)
+
+    token.refresh_from_db()
+    assert token.active is False
+
+
+def test_auditlog_records_event_changes():
+    from auditlog.models import LogEntry
+
+    event = EventFactory(name="Audited Event")
+    event.name = "Audited Event v2"
+    event.save()
+
+    entries = LogEntry.objects.get_for_object(event)
+    assert entries.filter(action=LogEntry.Action.UPDATE).exists()

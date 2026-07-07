@@ -472,3 +472,14 @@ def question_hide(request, pk):
         question.save(update_fields=["is_hidden", "updated_at"])
         messages.info(request, "Question hidden.")
     return redirect("events:session_detail", pk=question.session_id)
+
+
+def detail_by_name(request, name):
+    """Ports the original's /event/:name SEO alias (EventsController
+    #show_by_name) — resolves a slug to the canonical event URL."""
+    event = Event.objects.public_events().filter(slug=name).order_by("-start_time").first()
+    if event is None:
+        from django.http import Http404
+
+        raise Http404
+    return redirect("events:detail", pk=event.pk)

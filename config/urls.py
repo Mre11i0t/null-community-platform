@@ -20,6 +20,8 @@ urlpatterns = [
     path("leads/", include("apps.leads.urls")),
     # Top-level to match the original's flat /venues/:id route (VenuesController#show).
     path("venues/<int:pk>/", event_views.venue_detail, name="venue_detail"),
+    # Original's SEO alias: /event/:name (note singular) resolves a slug.
+    path("event/<slug:name>", event_views.detail_by_name, name="event_by_name"),
     path("", include("apps.accounts.urls")),
     path("", include("apps.content.urls")),
     path("", include("apps.proposals.urls")),
