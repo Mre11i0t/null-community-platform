@@ -28,6 +28,12 @@
       <tr><th>Venue</th><td>{{ event.venue.name }}</td></tr>
       <tr><th>Sessions</th><td><a href="{% url 'leads:session_index' event.pk %}">{{ event.event_sessions.count }}</a></td></tr>
       <tr><th>Registrations</th><td><a href="{% url 'leads:registration_index' event.pk %}">{{ event.event_registrations.count }}</a></td></tr>
+      {% if event.check_in_enabled %}
+      <tr><th>Check-in</th><td>
+        <a href="{% url 'leads:check_in_dashboard' event.pk %}" class="btn btn-sm btn-primary"><i class="fa fa-qrcode"></i> Check-in dashboard</a>
+        {% if event.auto_absent_enabled %}<span class="label label-info">auto-absent on</span>{% endif %}
+      </td></tr>
+      {% endif %}
     </table>
   </div>
 </div>

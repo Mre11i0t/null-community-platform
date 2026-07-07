@@ -6,6 +6,11 @@ app_name = "leads"
 
 urlpatterns = [
     path("events/", views.event_index, name="event_index"),
+    path("events/<int:event_id>/check_in/", views.check_in_dashboard, name="check_in_dashboard"),
+    path("events/<int:event_id>/check_in/scan/", views.check_in_scan, name="check_in_scan"),
+    path("events/<int:event_id>/check_in/mark/", views.check_in_mark, name="check_in_mark"),
+    path("events/<int:event_id>/check_in/stats.json", views.check_in_stats_json, name="check_in_stats_json"),
+    path("events/<int:event_id>/kiosk/<str:token>/", views.kiosk, name="kiosk"),
     path("events/new/", views.event_new, name="event_new"),
     path("events/<int:pk>/", views.event_show, name="event_show"),
     path("events/<int:pk>/edit/", views.event_edit, name="event_edit"),

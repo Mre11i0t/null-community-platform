@@ -28,6 +28,8 @@ class LeadEventForm(forms.ModelForm):
             "ready_for_announcement",
             "ready_for_notifications",
             "ready_for_reminders",
+            "check_in_enabled",
+            "auto_absent_enabled",
             "image",
         ]
         widgets = {

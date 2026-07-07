@@ -17,4 +17,5 @@ urlpatterns = [
     path("<int:event_id>/registrations/new/", views.registration_new, name="registration_new"),
     path("<int:event_id>/registrations/<int:pk>/cancel/", views.registration_destroy, name="registration_destroy"),
     path("<int:event_id>/registrations/", views.registration_index, name="registration_index"),
+    path("<int:event_id>/registrations/<int:pk>/qr.png", views.registration_qr, name="registration_qr"),
 ]

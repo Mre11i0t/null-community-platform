@@ -196,6 +196,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.notifications.tasks.dispatch_event_notifications",
         "schedule": 900.0,
     },
+    "auto-mark-absent": {
+        "task": "apps.events.tasks.auto_mark_absent",
+        "schedule": 900.0,
+    },
 }
 
 # reCAPTCHA — used on signup, RSVP, and session comments in the original app

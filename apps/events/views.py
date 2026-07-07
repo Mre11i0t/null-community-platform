@@ -212,3 +212,28 @@ def registration_index(request, event_id):
     return render(
         request, "events/registration_index.html", {"event": event, "registrations": registrations}
     )
+
+
+@login_required
+def registration_qr(request, event_id, pk):
+    """PNG QR of the registration's check-in code — shown on the event
+    page to the registration's owner when the event has check-in enabled.
+    The QR encodes the opaque code only (no URL, no PII)."""
+    import io
+
+    import qrcode
+    from django.http import Http404, HttpResponse
+
+    event = get_object_or_404(Event.objects.alive(), pk=event_id)
+    registration = get_object_or_404(EventRegistration, pk=pk, event=event)
+    if not event.check_in_enabled:
+        raise Http404
+    is_owner = registration.user_id == request.user.id
+    is_lead = request.user.managed_chapter(event.chapter)
+    if not (is_owner or is_lead):
+        raise Http404
+
+    img = qrcode.make(registration.check_in_code, box_size=8, border=2)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return HttpResponse(buf.getvalue(), content_type="image/png")

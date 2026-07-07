@@ -61,3 +61,4 @@ Markdown==3.7
 python-slugify==8.0.4
 icalendar==6.1.0
 requests==2.32.3
+qrcode==8.2

@@ -4,6 +4,7 @@ import json
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -394,3 +395,131 @@ def chapter_edit(request, pk):
     else:
         form = LeadChapterForm(instance=chapter)
     return render(request, "leads/chapters/form.html", {"form": form, "chapter": chapter})
+
+
+# --- Check-in (Rev 3 — per-event opt-in) -------------------------------------
+
+
+def _require_check_in(event):
+    from django.http import Http404
+
+    if not event.check_in_enabled:
+        raise Http404("Check-in is not enabled for this event.")
+
+
+@require_leader
+def check_in_dashboard(request, event_id):
+    """Live confirmed-vs-checked-in counts + kiosk link. The page polls
+    the JSON endpoint below; no websockets needed at meetup scale."""
+    from django.core import signing
+
+    event = _load_authorized_event(request, event_id)
+    _require_check_in(event)
+    kiosk_token = signing.dumps({"event": event.pk}, salt="event-kiosk")
+    return render(
+        request,
+        "leads/check_in/dashboard.html",
+        {"event": event, "kiosk_token": kiosk_token, "stats": _check_in_stats(event)},
+    )
+
+
+def _check_in_stats(event):
+    registrations = event.event_registrations
+    return {
+        "confirmed": registrations.filter(state=EventRegistration.STATE_CONFIRMED).count(),
+        "checked_in": registrations.filter(checked_in_at__isnull=False).count(),
+        "provisional": registrations.filter(state=EventRegistration.STATE_PROVISIONAL).count(),
+    }
+
+
+@require_leader
+def check_in_stats_json(request, event_id):
+    event = _load_authorized_event(request, event_id)
+    _require_check_in(event)
+    return JsonResponse(_check_in_stats(event))
+
+
+@require_leader
+def check_in_scan(request, event_id):
+    """Scanner page: camera QR scanning (vendored html5-qrcode) with a
+    manual code-entry fallback (also covers USB barcode scanners, which
+    type the code and press Enter)."""
+    event = _load_authorized_event(request, event_id)
+    _require_check_in(event)
+    return render(request, "leads/check_in/scan.html", {"event": event})
+
+
+@require_leader
+@require_POST
+def check_in_mark(request, event_id):
+    """Marks one registration checked-in, by QR/manual code or by
+    registration id (from the kiosk/dashboard lists). JSON response so
+    the scanner can stay on the page."""
+    event = _load_authorized_event(request, event_id)
+    _require_check_in(event)
+    return _mark_checked_in(event, request.POST)
+
+
+def _mark_checked_in(event, data):
+    code = (data.get("code") or "").strip()
+    reg_id = data.get("registration_id")
+    if code:
+        registration = event.event_registrations.filter(check_in_code=code).first()
+    elif reg_id:
+        registration = event.event_registrations.filter(pk=reg_id).first()
+    else:
+        return JsonResponse({"ok": False, "error": "No code given."}, status=400)
+
+    if registration is None:
+        return JsonResponse({"ok": False, "error": "Unknown code for this event."}, status=404)
+    already = registration.checked_in_at is not None
+    registration.check_in()
+    return JsonResponse(
+        {
+            "ok": True,
+            "name": registration.user.name or registration.user.email,
+            "already_checked_in": already,
+            "checked_in_at": registration.checked_in_at.isoformat(),
+        }
+    )
+
+
+def kiosk(request, event_id, token):
+    """Self-check-in kiosk: a tablet at the door, no login. Access is a
+    signed token minted on the dashboard (valid 24h) so handing the URL
+    to a volunteer's device never exposes a lead session. Locked down:
+    search-by-name + mark-present only."""
+    from django.core import signing
+    from django.http import Http404
+
+    event = get_object_or_404(Event, pk=event_id)
+    _require_check_in(event)
+    try:
+        payload = signing.loads(token, salt="event-kiosk", max_age=60 * 60 * 24)
+    except signing.BadSignature:
+        raise Http404
+    if payload.get("event") != event.pk:
+        raise Http404
+
+    if request.method == "POST":
+        registration = event.event_registrations.filter(
+            pk=request.POST.get("registration_id")
+        ).first()
+        if registration:
+            registration.check_in()
+            messages.success(request, "You're checked in — welcome!")
+        return redirect("leads:kiosk", event_id=event.pk, token=token)
+
+    q = (request.GET.get("q") or "").strip()
+    results = []
+    if len(q) >= 2:
+        results = (
+            event.event_registrations.select_related("user")
+            .filter(Q(user__name__icontains=q) | Q(user__email__icontains=q))
+            .order_by("user__name")[:20]
+        )
+    return render(
+        request,
+        "leads/check_in/kiosk.html",
+        {"event": event, "q": q, "results": results, "token": token},
+    )

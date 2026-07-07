@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block page_title %}Check-in — {{ event.name }}{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="page-header">
+      <h1>Check-in <small>{{ event.name }}</small></h1>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-4">
+    <div class="panel panel-success">
+      <div class="panel-heading">Checked in</div>
+      <div class="panel-body"><h1 id="stat-checked-in" style="margin:0">{{ stats.checked_in }}</h1></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="panel panel-info">
+      <div class="panel-heading">Confirmed</div>
+      <div class="panel-body"><h1 id="stat-confirmed" style="margin:0">{{ stats.confirmed }}</h1></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="panel panel-default">
+      <div class="panel-heading">Provisional</div>
+      <div class="panel-body"><h1 id="stat-provisional" style="margin:0">{{ stats.provisional }}</h1></div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <a class="btn btn-primary" href="{% url 'leads:check_in_scan' event.pk %}"><i class="fa fa-qrcode"></i> Open scanner</a>
+    <a class="btn btn-default" href="{% url 'leads:kiosk' event.pk kiosk_token %}" target="_blank"><i class="fa fa-desktop"></i> Open kiosk (share this URL with the door tablet)</a>
+    <a class="btn btn-default" href="{% url 'leads:registration_index' event.pk %}">All registrations</a>
+    <p class="help-block">The kiosk link needs no login and stays valid for 24 hours — safe to open on a volunteer's device.</p>
+  </div>
+</div>
+
+<script>
+  setInterval(function () {
+    fetch("{% url 'leads:check_in_stats_json' event.pk %}")
+      .then(function (r) { return r.json(); })
+      .then(function (s) {
+        document.getElementById("stat-checked-in").textContent = s.checked_in;
+        document.getElementById("stat-confirmed").textContent = s.confirmed;
+        document.getElementById("stat-provisional").textContent = s.provisional;
+      });
+  }, 5000);
+</script>
+{% endblock %}

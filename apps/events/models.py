@@ -127,6 +127,13 @@ class Event(TimeStampedModel, SoftDeleteModel):
     max_registration = models.IntegerField(default=0)
     image = models.ImageField(upload_to="events/", blank=True, null=True)
 
+    # Rev 3 check-in — both flags per-event, independent, default OFF.
+    # check_in_enabled surfaces QR codes/scanner/kiosk/dashboard;
+    # auto_absent_enabled lets the post-event sweep mark no-shows Absent.
+    check_in_enabled = models.BooleanField(default=False)
+    auto_absent_enabled = models.BooleanField(default=False)
+    auto_absent_processed_at = models.DateTimeField(null=True, blank=True)
+
     objects = EventQuerySet.as_manager()
 
     class Meta:
@@ -324,6 +331,11 @@ class EventRegistration(TimeStampedModel):
     accepted = models.BooleanField(null=True, blank=True)
     state = models.CharField(max_length=255, choices=STATE_CHOICES, blank=True)
 
+    # Rev 3 check-in: opaque per-registration code (rendered as a QR),
+    # and the moment attendance was recorded at the door.
+    check_in_code = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    checked_in_at = models.DateTimeField(null=True, blank=True)
+
     objects = EventRegistrationQuerySet.as_manager()
 
     class Meta:
@@ -357,10 +369,21 @@ class EventRegistration(TimeStampedModel):
         open events are auto-Confirmed."""
         if self._state.adding and not self.state:
             self.state = self.STATE_PROVISIONAL if self.event.invite_only() else self.STATE_CONFIRMED
+        if not self.check_in_code:
+            import secrets
+
+            self.check_in_code = secrets.token_urlsafe(16)
         super().save(*args, **kwargs)
 
     def confirmed(self):
         return self.state == self.STATE_CONFIRMED
+
+    def check_in(self):
+        if self.checked_in_at is None:
+            self.checked_in_at = timezone.now()
+            if self.state != self.STATE_CONFIRMED:
+                self.state = self.STATE_CONFIRMED
+            self.save(update_fields=["checked_in_at", "state", "updated_at"])
 
     def set_state(self, new_state):
         valid_states = dict(self.STATE_CHOICES)

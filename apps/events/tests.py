@@ -376,3 +376,126 @@ def test_with_tz_filter_appends_ist_label():
     rendered = with_tz(dt)
     assert rendered.endswith("IST")
     assert with_tz(None) == ""
+
+
+# --- Rev 3 check-in (per-event opt-in) ---------------------------------------
+
+
+def _check_in_event(**kwargs):
+    return EventFactory(
+        public=True,
+        check_in_enabled=True,
+        start_time=timezone.now() - datetime.timedelta(hours=1),
+        end_time=timezone.now() + datetime.timedelta(hours=2),
+        **kwargs,
+    )
+
+
+def test_registration_gets_check_in_code_on_create():
+    registration = EventRegistrationFactory()
+    assert registration.check_in_code and len(registration.check_in_code) >= 16
+
+
+def test_check_in_pages_404_when_flag_disabled(client):
+    from tests.factories import ChapterLeadFactory
+
+    event = EventFactory(
+        check_in_enabled=False,
+        start_time=timezone.now() + datetime.timedelta(days=1),
+        end_time=timezone.now() + datetime.timedelta(days=1, hours=2),
+    )
+    lead = ChapterLeadFactory(chapter=event.chapter)
+    client.force_login(lead.user)
+    assert client.get(reverse("leads:check_in_dashboard", args=[event.pk])).status_code == 404
+    assert client.get(reverse("leads:check_in_scan", args=[event.pk])).status_code == 404
+
+
+def test_scanner_marks_registration_by_code(client):
+    from tests.factories import ChapterLeadFactory
+
+    event = _check_in_event()
+    registration = EventRegistrationFactory(event=event)
+    lead = ChapterLeadFactory(chapter=event.chapter)
+    client.force_login(lead.user)
+
+    response = client.post(
+        reverse("leads:check_in_mark", args=[event.pk]), {"code": registration.check_in_code}
+    )
+    data = response.json()
+    assert data["ok"] and not data["already_checked_in"]
+    registration.refresh_from_db()
+    assert registration.checked_in_at is not None
+
+    # second scan reports duplicate instead of double-counting
+    data = client.post(
+        reverse("leads:check_in_mark", args=[event.pk]), {"code": registration.check_in_code}
+    ).json()
+    assert data["ok"] and data["already_checked_in"]
+
+    # unknown code
+    response = client.post(reverse("leads:check_in_mark", args=[event.pk]), {"code": "nope"})
+    assert response.status_code == 404
+
+
+def test_kiosk_token_flow_without_login(client):
+    from django.core import signing
+
+    event = _check_in_event()
+    registration = EventRegistrationFactory(event=event)
+    token = signing.dumps({"event": event.pk}, salt="event-kiosk")
+
+    url = reverse("leads:kiosk", args=[event.pk, token])
+    response = client.get(url, {"q": registration.user.name[:5]})
+    assert response.status_code == 200
+    assert registration in response.context["results"]
+
+    client.post(url, {"registration_id": registration.pk})
+    registration.refresh_from_db()
+    assert registration.checked_in_at is not None
+
+    # tampered token 404s
+    bad = reverse("leads:kiosk", args=[event.pk, token + "x"])
+    assert client.get(bad).status_code == 404
+
+
+def test_registration_qr_only_for_owner_or_lead(client):
+    event = _check_in_event()
+    registration = EventRegistrationFactory(event=event)
+    url = reverse("events:registration_qr", args=[event.pk, registration.pk])
+
+    client.force_login(registration.user)
+    response = client.get(url)
+    assert response.status_code == 200 and response["Content-Type"] == "image/png"
+
+    stranger = UserFactory()
+    client.force_login(stranger)
+    assert client.get(url).status_code == 404
+
+
+def test_auto_absent_only_when_both_flags_and_event_over():
+    from apps.events.tasks import auto_mark_absent
+
+    past = dict(
+        start_time=timezone.now() - datetime.timedelta(hours=5),
+        end_time=timezone.now() - datetime.timedelta(hours=3),
+    )
+    flagged = EventFactory(public=True, check_in_enabled=True, auto_absent_enabled=True, **past)
+    unflagged = EventFactory(public=True, check_in_enabled=True, auto_absent_enabled=False, **past)
+
+    no_show = EventRegistrationFactory(event=flagged)
+    no_show.set_state(EventRegistration.STATE_CONFIRMED)
+    attended = EventRegistrationFactory(event=flagged)
+    attended.set_state(EventRegistration.STATE_CONFIRMED)
+    attended.check_in()
+    unflagged_reg = EventRegistrationFactory(event=unflagged)
+    unflagged_reg.set_state(EventRegistration.STATE_CONFIRMED)
+
+    assert auto_mark_absent() == 1
+
+    no_show.refresh_from_db(); attended.refresh_from_db(); unflagged_reg.refresh_from_db()
+    assert no_show.state == EventRegistration.STATE_ABSENT
+    assert attended.state == EventRegistration.STATE_CONFIRMED
+    assert unflagged_reg.state == EventRegistration.STATE_CONFIRMED  # untouched: flag off
+
+    # idempotent — second run processes nothing
+    assert auto_mark_absent() == 0

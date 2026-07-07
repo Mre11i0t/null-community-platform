@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block page_title %}Welcome — {{ event.name }}{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 col-md-offset-2 text-center">
+    <h1>Welcome to {{ event.name }}</h1>
+    <p class="lead">Find your name to check in</p>
+
+    <form method="get" action="">
+      <div class="input-group input-group-lg">
+        <input type="text" name="q" class="form-control" placeholder="Type your name or email…" value="{{ q }}" autofocus autocomplete="off">
+        <span class="input-group-btn"><button class="btn btn-primary" type="submit">Search</button></span>
+      </div>
+    </form>
+
+    {% if q %}
+      <table class="table table-striped" style="margin-top:24px">
+        {% for registration in results %}
+          <tr>
+            <td class="text-left" style="vertical-align:middle">{{ registration.user.name|default:registration.user.email }}</td>
+            <td class="text-right">
+              {% if registration.checked_in_at %}
+                <span class="label label-success">Checked in</span>
+              {% else %}
+                <form method="post" action="" style="display:inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="registration_id" value="{{ registration.pk }}">
+                  <button type="submit" class="btn btn-success">I'm here</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td>No registrations match "{{ q }}". Ask a volunteer for help.</td></tr>
+        {% endfor %}
+      </table>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

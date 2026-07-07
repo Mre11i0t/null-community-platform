@@ -28,6 +28,21 @@
   </div>
 </div>
 
+{% if event.check_in_enabled and user_registration and user_registration.confirmed %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="panel panel-info">
+      <div class="panel-heading"><i class="fa fa-qrcode"></i> Your check-in pass</div>
+      <div class="panel-body">
+        <img src="{% url 'events:registration_qr' event.pk user_registration.pk %}" alt="Check-in QR code" width="180" height="180">
+        <p>Show this QR at the door{% if user_registration.checked_in_at %} — <strong>you're checked in!</strong>{% endif %}</p>
+        <p class="text-muted">Code: <code>{{ user_registration.check_in_code }}</code></p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <div class="row">
   <div class="col-md-12">
     <div class="bs-callout bs-callout-info2">
