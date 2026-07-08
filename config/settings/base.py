@@ -312,20 +312,44 @@ RECAPTCHA_PUBLIC_KEY = env("RECAPTCHA_PUBLIC_KEY", default="")
 RECAPTCHA_PRIVATE_KEY = env("RECAPTCHA_PRIVATE_KEY", default="")
 
 # Content Security Policy — the original Rails app had no CSP at all
+# Content Security Policy.
+#
+# IMPORTANT: the pinned django-csp is 3.8, which reads the FLAT ``CSP_*``
+# settings below — it IGNORES the ``CONTENT_SECURITY_POLICY`` dict entirely
+# (that's django-csp 4.x syntax). Without the flat settings, 3.8 falls back to
+# a bare ``default-src 'self'`` that blocks the reCAPTCHA script, the allauth
+# TOTP ``data:`` SVG QR code, and any https/gravatar images. Both forms are
+# kept in sync so the policy is correct whether 3.8 or a future 4.x is
+# installed.
+_CSP_SCRIPT_SRC = (
+    "'self'",
+    "https://checkout.razorpay.com",
+    "https://www.google.com/recaptcha/",
+    "https://www.gstatic.com/recaptcha/",
+    "'unsafe-inline'",
+)
+_CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com")
+_CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
+_CSP_IMG_SRC = ("'self'", "data:", "https:")
+_CSP_FRAME_SRC = ("'self'", "https://www.google.com/recaptcha/")
+
+# django-csp 3.8 (active) — flat settings.
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_SCRIPT_SRC = _CSP_SCRIPT_SRC
+CSP_STYLE_SRC = _CSP_STYLE_SRC
+CSP_FONT_SRC = _CSP_FONT_SRC
+CSP_IMG_SRC = _CSP_IMG_SRC
+CSP_FRAME_SRC = _CSP_FRAME_SRC
+
+# django-csp 4.x — dict form (ignored by 3.8; kept for a future upgrade).
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ["'self'"],
-        "script-src": [
-            "'self'",
-            "https://checkout.razorpay.com",
-            "https://www.google.com/recaptcha/",
-            "https://www.gstatic.com/recaptcha/",
-            "'unsafe-inline'",
-        ],
-        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        "font-src": ["'self'", "https://fonts.gstatic.com"],
-        "img-src": ["'self'", "data:", "https:"],
-        "frame-src": ["'self'", "https://www.google.com/recaptcha/"],
+        "script-src": list(_CSP_SCRIPT_SRC),
+        "style-src": list(_CSP_STYLE_SRC),
+        "font-src": list(_CSP_FONT_SRC),
+        "img-src": list(_CSP_IMG_SRC),
+        "frame-src": list(_CSP_FRAME_SRC),
     }
 }
 

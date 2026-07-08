@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{# Override allauth's bare standalone layout so EVERY allauth page — the 2FA
+   flow (TOTP activate/deactivate, recovery codes, reauthenticate), change
+   email/password, account connections, sessions, password reset — inherits
+   the site's Bootstrap/Yeti theme + header/footer instead of rendering as raw
+   unstyled HTML. allauth's entrance.html and manage.html both extend this
+   file, and allauth pages fill {% templatetag openblock %} block content
+   {% templatetag closeblock %} — the same block base.html exposes — so page
+   content flows into the themed layout. ({% templatetag openblock %} extends
+   MUST be the first tag, hence this note lives below it.) #}

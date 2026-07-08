@@ -17,8 +17,17 @@ from django.utils import timezone
 # the env for reproducible logins, otherwise a strong one is generated + printed.
 SEED_PASSWORD = os.environ.get("SEED_PASSWORD") or ("null-seed-" + secrets.token_urlsafe(9))
 
+from django.conf import settings
+from django.contrib.sites.models import Site
+
 from apps.accounts.models import User
 from apps.chapters.models import Chapter, ChapterLead
+
+# The django.contrib.sites default row is "example.com", which leaks into
+# allauth confirmation/reset emails (From, subject prefix, links). Point it at
+# the deployment's root domain so emails read correctly.
+_root = getattr(settings, "ROOT_DOMAIN", "") or "localhost"
+Site.objects.update_or_create(pk=1, defaults={"domain": _root, "name": "null Community"})
 from apps.events.models import Event, EventRegistration, EventSession, EventType, Venue
 from apps.proposals.models import SessionProposal
 
