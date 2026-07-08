@@ -39,5 +39,5 @@ echo "==> Sessions:"
 screen -ls | sed 's/^/    /' || true
 echo "==> Local health:"
 curl -s --retry 20 --retry-connrefused --retry-delay 1 -o /dev/null \
-     -w "    app 127.0.0.1:8000 -> %{http_code}\n" -H "Host: bangalore.pavankarthick.in" http://127.0.0.1:8000/ || true
-echo "Done. Public: https://bangalore.pavankarthick.in  |  Reattach: screen -r null-app"
+     -w "    app 127.0.0.1:8000 -> %{http_code}\n" -H "Host: ${SHOWCASE_HEALTH_HOST:-localhost}" http://127.0.0.1:8000/ || true
+echo "Done. Public: your configured chapter host(s)  |  Reattach: screen -r null-app"

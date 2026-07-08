@@ -1,35 +1,35 @@
 # Showcase deployment — Mac Mini + Cloudflare Tunnel
 
-Stand up the platform on a Mac Mini and expose it at `pavankarthick.in` with
+Stand up the platform on a Mac Mini and expose it at `example.com` with
 real chapter subdomains, for a next-day demo. Cloudflare terminates TLS at its
 edge, so **no Caddy / no certificates to manage** — a tunnel forwards HTTPS to
 a local gunicorn.
 
 ```
 browser ──https──▶ Cloudflare edge ──tunnel──▶ cloudflared ──http──▶ gunicorn 127.0.0.1:8000
-  pavankarthick.in            (TLS here)                              (Django, showcase settings)
-  delhi.pavankarthick.in
-  bangalore.pavankarthick.in
-  goa.pavankarthick.in
+  example.com            (TLS here)                              (Django, showcase settings)
+  delhi.example.com
+  bangalore.example.com
+  goa.example.com
 ```
 
 **Domain scheme.** The root directory lives at the **apex** and chapters are
-**one level** under it (`delhi.pavankarthick.in`). One level is the deepest
-that Cloudflare's **free** Universal SSL wildcard (`*.pavankarthick.in`)
-covers — a nested scheme like `bangalore.null.pavankarthick.in` would need the
+**one level** under it (`delhi.example.com`). One level is the deepest
+that Cloudflare's **free** Universal SSL wildcard (`*.example.com`)
+covers — a nested scheme like `bangalore.null.example.com` would need the
 paid Advanced Certificate Manager, so it is deliberately avoided here.
 
 > **Heads-up — this temporarily takes over your apex.** Routing
-> `pavankarthick.in` through the tunnel replaces whatever your apex shows today
+> `example.com` through the tunnel replaces whatever your apex shows today
 > with the null root directory, for the duration of the demo. Removing the
 > apex route (or stopping the tunnel) restores it instantly. If you'd rather
 > keep your personal homepage live, skip the apex route below and enter the
-> demo at `bangalore.pavankarthick.in` instead (you just lose the
+> demo at `bangalore.example.com` instead (you just lose the
 > root-directory page). We route **only** the apex + three named city
 > subdomains — no
 > wildcard — so any *other* subdomains you already use are untouched.
 
-Prereqs: Docker Desktop (running), the repo's `venv`, and `pavankarthick.in` on
+Prereqs: Docker Desktop (running), the repo's `venv`, and `example.com` on
 Cloudflare.
 
 ---
@@ -38,7 +38,7 @@ Cloudflare.
 
 ```bash
 brew install cloudflared
-cloudflared tunnel login                 # opens a browser; pick pavankarthick.in
+cloudflared tunnel login                 # opens a browser; pick example.com
 cloudflared tunnel create null-showcase  # note the Tunnel ID it prints
 ```
 
@@ -50,13 +50,13 @@ are served by the app:
 tunnel: <TUNNEL-ID>
 credentials-file: /Users/<you>/.cloudflared/<TUNNEL-ID>.json
 ingress:
-  - hostname: "pavankarthick.in"            # root directory (omit this line to keep your apex page)
+  - hostname: "example.com"            # root directory (omit this line to keep your apex page)
     service: http://127.0.0.1:8000
-  - hostname: "delhi.pavankarthick.in"
+  - hostname: "delhi.example.com"
     service: http://127.0.0.1:8000
-  - hostname: "bangalore.pavankarthick.in"
+  - hostname: "bangalore.example.com"
     service: http://127.0.0.1:8000
-  - hostname: "goa.pavankarthick.in"
+  - hostname: "goa.example.com"
     service: http://127.0.0.1:8000
   - service: http_status:404
 ```
@@ -65,10 +65,10 @@ Point DNS at the tunnel (one per hostname; drop the apex line to keep your
 personal homepage):
 
 ```bash
-cloudflared tunnel route dns null-showcase pavankarthick.in
-cloudflared tunnel route dns null-showcase delhi.pavankarthick.in
-cloudflared tunnel route dns null-showcase bangalore.pavankarthick.in
-cloudflared tunnel route dns null-showcase goa.pavankarthick.in
+cloudflared tunnel route dns null-showcase example.com
+cloudflared tunnel route dns null-showcase delhi.example.com
+cloudflared tunnel route dns null-showcase bangalore.example.com
+cloudflared tunnel route dns null-showcase goa.example.com
 ```
 
 Each command adds a **proxied (orange-cloud) CNAME** to
@@ -104,8 +104,8 @@ In a second terminal:
 cloudflared tunnel run null-showcase       # leave running
 ```
 
-Open **https://pavankarthick.in** (root directory) and
-**https://bangalore.pavankarthick.in** (the populated Bangalore chapter). Done.
+Open **https://example.com** (root directory) and
+**https://bangalore.example.com** (the populated Bangalore chapter). Done.
 
 ### Keep it alive across reboots (optional)
 
@@ -134,9 +134,9 @@ by changing `PRIMARY_CHAPTER` at the top of `scripts/seed_rev3_data.py` and
 re-seeding.
 
 ### Suggested tour
-1. `https://pavankarthick.in` — root directory: three chapters + collective
+1. `https://example.com` — root directory: three chapters + collective
    stats (Part 0 architecture).
-2. `https://bangalore.pavankarthick.in` — chapter homepage, upcoming events,
+2. `https://bangalore.example.com` — chapter homepage, upcoming events,
    archives.
 3. Log in as `member1@…`, RSVP to the **waitlist** event → see the waitlist
    position; the confirmation email prints in the gunicorn log.
