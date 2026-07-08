@@ -22,7 +22,15 @@ CSRF_TRUSTED_ORIGINS = env.list(  # noqa: F405
 AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="")  # noqa: F405
 AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="ap-south-1")  # noqa: F405
 
-# Static: WhiteNoise compressed-manifest (collectstatic runs in the image).
+# Static: WhiteNoise compressed serving (gzip/brotli). We deliberately use
+# CompressedStaticFilesStorage and NOT the *Manifest* variant: the vendored
+# Bootstrap/Bootswatch CSS carries a few dangling asset references (e.g.
+# css/home.css -> images/bg2.png), and the manifest backend's strict
+# reference-rewriting turns each one into a hard collectstatic failure that
+# blocks the whole deploy. Without the manifest, a dangling asset simply
+# 404s on its own while every real file still serves compressed. (Trade-off:
+# no hashed-filename cache-busting. Fix the dangling refs, then switch back
+# to CompressedManifestStaticFilesStorage if you want it.)
 # Media: S3 when a bucket is set, else local disk so a keyless deployment
 # still stores uploads (see MEDIA serving note in urls.py for the local case).
 STORAGES = {
@@ -31,7 +39,7 @@ STORAGES = {
         if AWS_STORAGE_BUCKET_NAME
         else "django.core.files.storage.FileSystemStorage"
     },
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
 
 REQUIRE_2FA_FOR_PRIVILEGED = env.bool("REQUIRE_2FA_FOR_PRIVILEGED", default=True)  # noqa: F405

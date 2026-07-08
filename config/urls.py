@@ -33,3 +33,14 @@ if settings.DEBUG:
 
     urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+elif settings.STORAGES["default"]["BACKEND"].endswith("FileSystemStorage"):
+    # Prod/showcase with local-disk media (no S3 bucket configured): the
+    # static() helper is a no-op when DEBUG is False, so serve uploads
+    # explicitly. Fine for a small/showcase host; use S3 or a front-proxy
+    # file_server for real traffic.
+    from django.urls import re_path
+    from django.views.static import serve
+
+    urlpatterns += [
+        re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT}),
+    ]
