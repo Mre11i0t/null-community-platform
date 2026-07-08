@@ -33,6 +33,22 @@ class Privileged2FAMiddleware:
                 messages.info(request, "Two-factor authentication is already set up on your account.")
                 return redirect(reverse("mfa_index"))
 
+            # Already-logged-in guard: a provider *login* initiation
+            # (/accounts/<provider>/login/) shows an OAuth "sign in" flow even
+            # when you're already authenticated. Skip it and go straight to the
+            # intended destination — unless it's an explicit account-connect
+            # (?process=connect) or the OAuth callback, which are legitimate
+            # while logged in.
+            p = request.path
+            if (
+                p.startswith("/accounts/")
+                and p.rstrip("/").endswith("/login")
+                and "/callback" not in p
+                and request.GET.get("process") != "connect"
+            ):
+                nxt = request.GET.get("next")
+                return redirect(nxt if nxt and nxt.startswith("/") else settings.LOGIN_REDIRECT_URL)
+
         if settings.REQUIRE_2FA_FOR_PRIVILEGED and request.user.is_authenticated:
             path = request.path
             # never trap the user out of the MFA setup/auth pages themselves

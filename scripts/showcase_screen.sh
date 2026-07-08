@@ -28,7 +28,7 @@ screen -dmS null-app bash -lc "
   source venv/bin/activate
   set -a; source deploy/showcase/.env.showcase; set +a
   exec gunicorn config.wsgi:application --bind 127.0.0.1:8000 --workers 3 \
-       --access-logfile - --error-logfile -
+       --pid /tmp/null_gunicorn.pid --access-logfile - --error-logfile -
 "
 
 echo "==> Starting cloudflared in screen session 'null-tunnel'"
