@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # Python dependencies — keep Django/deps current so the codebase doesn't rot.
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      django:
+        patterns: ["Django", "django-*", "djangorestframework*"]
+      dev:
+        dependency-type: development
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+
+  # Docker base image
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: monthly
