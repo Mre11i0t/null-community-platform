@@ -29,6 +29,16 @@ BaseContext.__copy__ = _base_context_copy
 
 
 @pytest.fixture(autouse=True)
+def _force_2fa_off(settings):
+    """Pin privileged-2FA OFF for every test, so a REQUIRE_2FA_FOR_PRIVILEGED=1
+    that leaks in from a sourced showcase/.env (into the shell running pytest)
+    can't redirect privileged-page tests to the 2FA setup flow. The one test
+    that exercises enforcement re-enables it locally via the `settings` fixture,
+    which runs after this autouse fixture."""
+    settings.REQUIRE_2FA_FOR_PRIVILEGED = False
+
+
+@pytest.fixture(autouse=True)
 def bypass_recaptcha(monkeypatch):
     """Every form with a captcha field (signup, RSVP, session comments)
     otherwise calls out to Google's siteverify endpoint on validate().

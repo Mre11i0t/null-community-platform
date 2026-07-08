@@ -135,7 +135,9 @@ def test_session_new_and_show(client, lead_and_chapter):
     assert session.user == speaker
 
 
-def test_session_delete_is_disabled(client, lead_and_chapter):
+def test_session_delete_soft_deletes(client, lead_and_chapter):
+    """Rev 3 (gap #2): the delete action now soft-deletes — the row survives
+    (restorable from admin) but drops out of the live/alive scope."""
     lead, chapter = lead_and_chapter
     event = EventFactory(chapter=chapter)
     session = EventSessionFactory(event=event)
@@ -143,7 +145,44 @@ def test_session_delete_is_disabled(client, lead_and_chapter):
 
     client.post(reverse("leads:session_delete", args=[event.pk, session.pk]))
 
-    assert EventSession.objects.filter(pk=session.pk).exists()
+    session.refresh_from_db()
+    assert session.is_deleted  # row still there, marked deleted
+    assert not EventSession.objects.alive().filter(pk=session.pk).exists()
+
+
+def test_session_mass_delete_archives_selected(client, lead_and_chapter):
+    """Bulk archive: only the selected sessions are soft-deleted."""
+    lead, chapter = lead_and_chapter
+    event = EventFactory(chapter=chapter)
+    s1 = EventSessionFactory(event=event)
+    s2 = EventSessionFactory(event=event)
+    keep = EventSessionFactory(event=event)
+    client.force_login(lead)
+
+    response = client.post(
+        reverse("leads:session_mass_delete", args=[event.pk]),
+        {"session_ids": [s1.pk, s2.pk]},
+    )
+
+    assert response.status_code == 302
+    alive = set(EventSession.objects.alive().filter(event=event).values_list("pk", flat=True))
+    assert alive == {keep.pk}
+
+
+def test_session_mass_delete_only_touches_own_chapter(client, lead_and_chapter):
+    """A lead can't bulk-archive another chapter's sessions via forged ids."""
+    lead, chapter = lead_and_chapter
+    my_event = EventFactory(chapter=chapter)
+    other_session = EventSessionFactory()  # different chapter/event
+    client.force_login(lead)
+
+    client.post(
+        reverse("leads:session_mass_delete", args=[my_event.pk]),
+        {"session_ids": [other_session.pk]},
+    )
+
+    other_session.refresh_from_db()
+    assert not other_session.is_deleted  # untouched — not part of my_event
 
 
 def test_session_suggest_user_searches_by_name_or_email(client, lead_and_chapter):

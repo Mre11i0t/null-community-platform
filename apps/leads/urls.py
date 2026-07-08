@@ -24,6 +24,7 @@ urlpatterns = [
     path("events/<int:event_id>/sessions/<int:pk>/", views.session_show, name="session_show"),
     path("events/<int:event_id>/sessions/<int:pk>/edit/", views.session_edit, name="session_edit"),
     path("events/<int:event_id>/sessions/<int:pk>/delete/", views.session_delete, name="session_delete"),
+    path("events/<int:event_id>/sessions/mass_delete/", views.session_mass_delete, name="session_mass_delete"),
     path("events/<int:event_id>/registrations/", views.registration_index, name="registration_index"),
     path("events/<int:event_id>/registrations/approval/", views.approval_queue, name="approval_queue"),
     path(

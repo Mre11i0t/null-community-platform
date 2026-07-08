@@ -170,6 +170,24 @@ def session_delete(request, event_id, pk):
 
 
 @require_leader
+@require_POST
+def session_mass_delete(request, event_id):
+    """Bulk soft-delete: archive every selected session at once."""
+    event = _load_authorized_event(request, event_id)
+    ids = request.POST.getlist("session_ids")
+    sessions = event.event_sessions.alive().filter(pk__in=ids)
+    count = 0
+    for session in sessions:
+        session.soft_delete()
+        count += 1
+    if count:
+        messages.success(request, f"Archived {count} session{'s' if count != 1 else ''}.")
+    else:
+        messages.info(request, "No sessions selected.")
+    return redirect("leads:session_index", event_id=event.pk)
+
+
+@require_leader
 def session_suggest_user(request, event_id):
     """Ported from Leads::EventSessionsController#suggest_user."""
     _load_authorized_event(request, event_id)
