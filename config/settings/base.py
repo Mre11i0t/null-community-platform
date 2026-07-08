@@ -136,7 +136,16 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# Django 5.1 removed STATICFILES_STORAGE / DEFAULT_FILE_STORAGE in favour of
+# the STORAGES dict — the old settings are silently IGNORED, so they must
+# live here. Dev/test keep the plain backends (no collectstatic manifest to
+# resolve); prod.py swaps staticfiles to WhiteNoise's compressed-manifest
+# backend and default to S3 when a bucket is configured.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
