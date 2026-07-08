@@ -66,3 +66,4 @@ fido2==1.2.0
 django-anymail==15.0
 requests-oauthlib==2.0.0
 sentry-sdk==2.64.0
+PyJWT[crypto]==2.13.0
