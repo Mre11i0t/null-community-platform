@@ -36,9 +36,14 @@ class Command(BaseCommand):
             self.stderr.write(self.style.ERROR(f"Failed to fetch {base}/chapters: {exc}"))
             return
 
+        import re
+
+        status_suffix = re.compile(r"\s*\[Status[^\]]*\]\s*$", re.I)
         created = updated = 0
         for row in rows:
-            name = (row.get("name") or "").strip()
+            # API names for inactive/seed chapters carry a "[Status: ...]" tag —
+            # strip it so the directory shows a clean chapter name.
+            name = status_suffix.sub("", (row.get("name") or "").strip()).strip()
             if not name:
                 continue
             # Derive a unique subdomain; the API name may contain spaces ("Delhi NCR").
