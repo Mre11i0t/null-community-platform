@@ -32,6 +32,17 @@ or the first-pass auditor was over-strict and the feature actually works.
 Test suite: **198 → 202 passing** (4 new real-path tests; 2 existing tests
 tightened to assert the corrected behavior).
 
+**Assurance boundary (read this).** The adversarial refute-pass was applied
+only to the 17 non-CONFIRMED claims — that is where the gap-hunting effort
+went. The **55 CONFIRMED verdicts were single-pass**: one auditor read the
+implementing code and its test and judged the test exercises the real path,
+but none were sent to a second agent to refute. So "DELIVERED is
+substantially true" rests on trust in those 55, and the one class this audit
+did *not* re-check is a **false-CONFIRMED** — a feature that looks built with
+a test too shallow to catch a latent bug. If you want a stronger guarantee,
+the next pass would adversarially re-verify the 55 CONFIRMEDs (especially the
+HIGH-traffic member/leader flows).
+
 ---
 
 ## ✅ Fixed on this branch (6)
