@@ -57,7 +57,7 @@ django-taggit==6.1.0
 # making the package uninstallable on this stack.
 
 # Utils
-Markdown==3.7
+Markdown==3.10.2
 python-slugify==8.0.4
 icalendar==6.1.0
 requests==2.32.3
