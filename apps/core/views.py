@@ -38,6 +38,9 @@ def home(request):
 def directory(request):
     """Root-site landing: every active chapter with its next event, and
     all-time collective stats across the community."""
+    import json
+
+    from django.conf import settings
     from django.db.models import Count
 
     from apps.events.models import EventRegistration, EventSession
@@ -54,7 +57,27 @@ def directory(request):
         .count(),
         "registrations": EventRegistration.objects.count(),
     }
-    return render(request, "home/directory.html", {"chapters": chapters, "totals": totals})
+    # Pin data for the directory map — only chapters that have been geocoded.
+    map_pins = [
+        {
+            "name": c.name,
+            "lat": float(c.latitude),
+            "lng": float(c.longitude),
+            "url": c.site_url(),
+        }
+        for c in chapters
+        if c.latitude is not None and c.longitude is not None
+    ]
+    return render(
+        request,
+        "home/directory.html",
+        {
+            "chapters": chapters,
+            "totals": totals,
+            "map_pins_json": json.dumps(map_pins),
+            "maps_api_key": settings.GOOGLE_MAPS_API_KEY,
+        },
+    )
 
 
 def start_chapter(request):

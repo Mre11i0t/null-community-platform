@@ -17,6 +17,15 @@
   <div class="col-xs-6 col-md-3"><h2 style="margin:0">{{ totals.registrations }}</h2><p class="text-muted">Registrations</p></div>
 </div>
 
+{% if maps_api_key and map_pins_json != "[]" %}
+<div class="row">
+  <div class="col-md-12">
+    <h2 class="text-center section-title">The Community at a Glance</h2>
+    <div id="chapter-map" style="height:420px;width:100%;border-radius:6px;margin:12px 0 36px;background:#e9eef2"></div>
+  </div>
+</div>
+{% endif %}
+
 <div class="row row-flex">
   {% for chapter in chapters %}
   <div class="col-sm-6 col-md-4">
@@ -50,4 +59,36 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if maps_api_key and map_pins_json != "[]" %}
+<script>
+  window.__chapterPins = {{ map_pins_json|safe }};
+  function initChapterMap() {
+    var pins = window.__chapterPins || [];
+    var map = new google.maps.Map(document.getElementById('chapter-map'), {
+      zoom: 4,
+      center: { lat: 22.0, lng: 79.0 },  // India-centric default
+      mapTypeControl: false,
+      streetViewControl: false,
+      styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }]
+    });
+    var bounds = new google.maps.LatLngBounds();
+    var info = new google.maps.InfoWindow();
+    pins.forEach(function (p) {
+      var pos = { lat: p.lat, lng: p.lng };
+      var marker = new google.maps.Marker({ position: pos, map: map, title: 'null ' + p.name });
+      marker.addListener('click', function () {
+        info.setContent('<strong>null ' + p.name + '</strong><br><a href="' + p.url + '">Visit chapter site →</a>');
+        info.open(map, marker);
+      });
+      bounds.extend(pos);
+    });
+    if (pins.length > 1) { map.fitBounds(bounds); }
+    else if (pins.length === 1) { map.setCenter(bounds.getCenter()); map.setZoom(11); }
+  }
+</script>
+<script async src="https://maps.googleapis.com/maps/api/js?key={{ maps_api_key }}&callback=initChapterMap"></script>
+{% endif %}
 {% endblock %}

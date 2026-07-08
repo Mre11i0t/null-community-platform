@@ -328,10 +328,21 @@ _CSP_SCRIPT_SRC = (
     "https://www.gstatic.com/recaptcha/",
     "'unsafe-inline'",
 )
+# Google Maps JavaScript API (root-directory chapter pin map). The map only
+# renders when this key is set; otherwise the directory falls back to a plain
+# chapter grid (no broken/watermarked map).
+GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
+
+# Maps JS pulls its loader from maps.googleapis.com (script), makes XHR to
+# maps.googleapis.com (connect), and fetches tiles from maps.gstatic.com +
+# *.googleapis.com (img — already covered by the https: source).
 _CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com")
-_CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
+_CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com", "data:")
 _CSP_IMG_SRC = ("'self'", "data:", "https:")
 _CSP_FRAME_SRC = ("'self'", "https://www.google.com/recaptcha/")
+_CSP_CONNECT_SRC = ("'self'", "https://maps.googleapis.com")
+if GOOGLE_MAPS_API_KEY:
+    _CSP_SCRIPT_SRC = _CSP_SCRIPT_SRC + ("https://maps.googleapis.com", "https://maps.gstatic.com")
 
 # django-csp 3.8 (active) — flat settings.
 CSP_DEFAULT_SRC = ("'self'",)
@@ -340,6 +351,7 @@ CSP_STYLE_SRC = _CSP_STYLE_SRC
 CSP_FONT_SRC = _CSP_FONT_SRC
 CSP_IMG_SRC = _CSP_IMG_SRC
 CSP_FRAME_SRC = _CSP_FRAME_SRC
+CSP_CONNECT_SRC = _CSP_CONNECT_SRC
 
 # django-csp 4.x — dict form (ignored by 3.8; kept for a future upgrade).
 CONTENT_SECURITY_POLICY = {
@@ -350,6 +362,7 @@ CONTENT_SECURITY_POLICY = {
         "font-src": list(_CSP_FONT_SRC),
         "img-src": list(_CSP_IMG_SRC),
         "frame-src": list(_CSP_FRAME_SRC),
+        "connect-src": list(_CSP_CONNECT_SRC),
     }
 }
 

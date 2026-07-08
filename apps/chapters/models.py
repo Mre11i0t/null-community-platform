@@ -21,6 +21,11 @@ class Chapter(TimeStampedModel):
     city = models.CharField(max_length=255, blank=True)
     state = models.CharField(max_length=255, blank=True)
     country = models.CharField(max_length=255, blank=True)
+    # Geo coordinates for the root-directory pin map (PRD "chapter directory
+    # with map"). Nullable — a chapter without coords is simply not plotted.
+    # Filled by the `geocode_chapters` management command.
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     active = models.BooleanField(default=True)
     chapter_email = models.EmailField(max_length=255, blank=True)
     image = models.ImageField(upload_to="chapters/", blank=True, null=True)
