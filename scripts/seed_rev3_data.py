@@ -18,6 +18,11 @@ from apps.proposals.models import SessionProposal
 
 now = timezone.now()
 
+# The chapter that gets the lead, venue, demo events, sessions, and proposal.
+# The other seeded chapters stay as empty shells (still routable, no content).
+# Change this to re-home the demo onto a different city, then re-seed.
+PRIMARY_CHAPTER = "Bangalore"
+
 
 def make_user(email, name, password="password"):
     user, _ = User.objects.get_or_create(email=email, defaults={"name": name, "is_active": True})
@@ -57,18 +62,18 @@ for city in ("Delhi", "Bangalore", "Goa"):
     )
     chapters[city] = chapter
 
-ChapterLead.objects.get_or_create(user=lead_user, chapter=chapters["Delhi"], defaults={"active": True})
+ChapterLead.objects.get_or_create(user=lead_user, chapter=chapters[PRIMARY_CHAPTER], defaults={"active": True})
 
 venue, _ = Venue.objects.get_or_create(
-    chapter=chapters["Delhi"],
+    chapter=chapters[PRIMARY_CHAPTER],
     name="Hackspace Auditorium",
-    defaults={"address": "42 Cyber Street, Delhi", "contact_name": "Front Desk"},
+    defaults={"address": f"42 Cyber Street, {PRIMARY_CHAPTER}", "contact_name": "Front Desk"},
 )
 
 # 1. Upcoming event with check-in + auto-absent + custom questions + deadline
 checkin_event, _ = Event.objects.get_or_create(
     name="July Meetup — Check-in Demo",
-    chapter=chapters["Delhi"],
+    chapter=chapters[PRIMARY_CHAPTER],
     defaults=dict(
         venue=venue,
         event_type=meetup_type,
@@ -93,7 +98,7 @@ for member in members[:3]:
 # 2. Full event -> waitlist demo (cap 2, 3 registrants)
 full_event, _ = Event.objects.get_or_create(
     name="Packed Workshop — Waitlist Demo",
-    chapter=chapters["Delhi"],
+    chapter=chapters[PRIMARY_CHAPTER],
     defaults=dict(
         venue=venue,
         event_type=meetup_type,
@@ -112,7 +117,7 @@ for member in members[:3]:
 # 3. Invite-only event -> approval queue demo
 invite_event, _ = Event.objects.get_or_create(
     name="Red Team Night — Approval Demo",
-    chapter=chapters["Delhi"],
+    chapter=chapters[PRIMARY_CHAPTER],
     defaults=dict(
         venue=venue,
         event_type=invite_type,
@@ -130,7 +135,7 @@ for member in members[3:6]:
 # 4. Just-ended event -> feedback + auto-absent sweep targets
 ended_event, _ = Event.objects.get_or_create(
     name="June Meetup — Just Ended",
-    chapter=chapters["Delhi"],
+    chapter=chapters[PRIMARY_CHAPTER],
     defaults=dict(
         venue=venue,
         event_type=meetup_type,
@@ -175,13 +180,14 @@ past_session, _ = EventSession.objects.get_or_create(
 past_session.tags.add("osint")
 
 SessionProposal.objects.get_or_create(
-    chapter=chapters["Delhi"],
+    chapter=chapters[PRIMARY_CHAPTER],
     user=members[2],
     session_topic="Kubernetes Attack Paths",
     defaults={"event_type": meetup_type, "session_description": "K8s privilege escalation walkthrough."},
 )
 
 print("Seeded Rev 3 data:")
-print(f"  chapters: {', '.join(f'{c.subdomain}.localhost' for c in chapters.values())}")
+print(f"  primary (populated) chapter: {PRIMARY_CHAPTER} (subdomain {chapters[PRIMARY_CHAPTER].subdomain})")
+print(f"  chapters: {', '.join(c.subdomain for c in chapters.values())} (others are empty shells)")
 print(f"  users: lead@example.com / speaker@example.com / member1..6@example.com / admin@example.com (password: 'password')")
 print(f"  events: #{checkin_event.pk} check-in, #{full_event.pk} waitlist, #{invite_event.pk} approval, #{ended_event.pk} ended")

@@ -24,8 +24,9 @@ paid Advanced Certificate Manager, so it is deliberately avoided here.
 > with the null root directory, for the duration of the demo. Removing the
 > apex route (or stopping the tunnel) restores it instantly. If you'd rather
 > keep your personal homepage live, skip the apex route below and enter the
-> demo at `delhi.pavankarthick.in` instead (you just lose the root-directory
-> page). We route **only** the apex + three named city subdomains — no
+> demo at `bangalore.pavankarthick.in` instead (you just lose the
+> root-directory page). We route **only** the apex + three named city
+> subdomains — no
 > wildcard — so any *other* subdomains you already use are untouched.
 
 Prereqs: Docker Desktop (running), the repo's `venv`, and `pavankarthick.in` on
@@ -104,7 +105,7 @@ cloudflared tunnel run null-showcase       # leave running
 ```
 
 Open **https://pavankarthick.in** (root directory) and
-**https://delhi.pavankarthick.in** (Delhi chapter). Done.
+**https://bangalore.pavankarthick.in** (the populated Bangalore chapter). Done.
 
 ### Keep it alive across reboots (optional)
 
@@ -121,18 +122,21 @@ All passwords are `password`.
 | Login | Role |
 |---|---|
 | `admin@example.com` | superuser → `/admin` |
-| `lead@example.com` | Delhi chapter lead → `/leads/...` |
+| `lead@example.com` | Bangalore chapter lead → `/leads/...` |
 | `speaker@example.com` | speaker with past sessions |
 | `member1@example.com` … `member6@example.com` | attendees |
 
 Chapters: **delhi**, **bangalore**, **goa** (`<sub>.<ROOT_DOMAIN>`).
-Delhi has demo events wired for **check-in**, **waitlist**, **invite-only
-approval**, and a **just-ended** event.
+**Bangalore** is the populated demo chapter — its events are wired for
+**check-in**, **waitlist**, **invite-only approval**, and a **just-ended**
+event. Delhi and Goa are empty shells (routable, no content). Re-home the demo
+by changing `PRIMARY_CHAPTER` at the top of `scripts/seed_rev3_data.py` and
+re-seeding.
 
 ### Suggested tour
 1. `https://pavankarthick.in` — root directory: three chapters + collective
    stats (Part 0 architecture).
-2. `https://delhi.pavankarthick.in` — chapter homepage, upcoming events,
+2. `https://bangalore.pavankarthick.in` — chapter homepage, upcoming events,
    archives.
 3. Log in as `member1@…`, RSVP to the **waitlist** event → see the waitlist
    position; the confirmation email prints in the gunicorn log.
