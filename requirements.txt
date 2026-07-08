@@ -62,7 +62,7 @@ python-slugify==8.0.4
 icalendar==6.1.0
 requests==2.32.3
 qrcode==8.2
-fido2==1.2.0
+fido2==2.2.1
 django-anymail==15.0
 requests-oauthlib==2.0.0
 sentry-sdk==2.64.0
