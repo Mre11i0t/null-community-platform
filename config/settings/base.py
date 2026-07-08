@@ -282,7 +282,10 @@ if SENTRY_DSN:
 
     sentry_sdk.init(dsn=SENTRY_DSN, traces_sample_rate=0.1, send_default_pii=False)
 
-MAILGUN_API_KEY = env("MAILGUN_API_KEY", default="")
+# Accept either the classic account API key or a domain-scoped "sending key"
+# (Mailgun's newer, recommended credential) — both authenticate the messages
+# endpoint the same way, so anymail treats them identically.
+MAILGUN_API_KEY = env("MAILGUN_API_KEY", default="") or env("MAILGUN_SENDING_KEY", default="")
 if MAILGUN_API_KEY:
     INSTALLED_APPS.append("anymail")
     EMAIL_BACKEND = "anymail.backends.mailgun.EmailBackend"

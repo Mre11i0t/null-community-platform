@@ -42,8 +42,11 @@ CSRF_COOKIE_DOMAIN = env("CSRF_COOKIE_DOMAIN", default=SESSION_COOKIE_DOMAIN)  #
 CELERY_TASK_ALWAYS_EAGER = True
 
 # Console email by default (visible in the gunicorn log, nothing to configure).
-# Set MAILGUN_API_KEY in the env to send real mail instead.
-if not env("MAILGUN_API_KEY", default=""):  # noqa: F405
+# Fall back to console ONLY when no Mailgun credential was resolved. Check the
+# value base.py already resolved (MAILGUN_API_KEY *or* MAILGUN_SENDING_KEY) —
+# NOT env("MAILGUN_API_KEY"), which misses the sending-key case and would force
+# console even when Mailgun is configured.
+if not MAILGUN_API_KEY:  # noqa: F405  (resolved in base.py)
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Seeded demo users have unverified emails, and there's no real inbox to click
@@ -51,6 +54,16 @@ if not env("MAILGUN_API_KEY", default=""):  # noqa: F405
 # (prod-correct); relax it for the demo so seeded logins work — same reasoning
 # as dev.py. Sign-ups during the demo also skip the confirm-email gate.
 ACCOUNT_EMAIL_VERIFICATION = "optional"
+
+# reCAPTCHA guards signup / RSVP / comments. base.py leaves the keys empty,
+# which BREAKS those forms under prod. Default to Google's published test keys
+# (widget always passes) so the registration flow works out of the box; set
+# REAL RECAPTCHA_PUBLIC_KEY / RECAPTCHA_PRIVATE_KEY in the env for genuine bot
+# protection before treating this as production.
+if not env("RECAPTCHA_PUBLIC_KEY", default=""):  # noqa: F405
+    RECAPTCHA_PUBLIC_KEY = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+    RECAPTCHA_PRIVATE_KEY = "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"
+    SILENCED_SYSTEM_CHECKS = ["django_recaptcha.recaptcha_test_key_error"]
 
 # Keep the demo frictionless: don't force TOTP enrolment before admins/leads
 # can do anything. Flip REQUIRE_2FA_FOR_PRIVILEGED=1 in the env to showcase 2FA.
