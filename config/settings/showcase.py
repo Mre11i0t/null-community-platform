@@ -46,6 +46,12 @@ CELERY_TASK_ALWAYS_EAGER = True
 if not env("MAILGUN_API_KEY", default=""):  # noqa: F405
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
+# Seeded demo users have unverified emails, and there's no real inbox to click
+# a confirmation link in (console/sandbox email). base.py mandates verification
+# (prod-correct); relax it for the demo so seeded logins work — same reasoning
+# as dev.py. Sign-ups during the demo also skip the confirm-email gate.
+ACCOUNT_EMAIL_VERIFICATION = "optional"
+
 # Keep the demo frictionless: don't force TOTP enrolment before admins/leads
 # can do anything. Flip REQUIRE_2FA_FOR_PRIVILEGED=1 in the env to showcase 2FA.
 REQUIRE_2FA_FOR_PRIVILEGED = env.bool("REQUIRE_2FA_FOR_PRIVILEGED", default=False)  # noqa: F405
