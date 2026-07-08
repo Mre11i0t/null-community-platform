@@ -7,5 +7,7 @@ class CoreConfig(AppConfig):
 
     def ready(self):
         from .audit import register_audited_models
+        from .compat import apply_basecontext_copy_patch
 
+        apply_basecontext_copy_patch()
         register_audited_models()
