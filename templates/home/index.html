@@ -36,7 +36,6 @@
       <div class="text-center btn-cluster">
         <a href="{% url 'chapters:list' %}" class="btn btn-lg btn-primary"><i class="fa fa-globe"></i> Find a Chapter Near You</a>
         <a href="https://linktr.ee/nullcommunity" class="btn btn-lg btn-primary" target="_blank"><i class="fa fa-link"></i> Social Network Links</a>
-        <a href="https://jobs.null.community" class="btn btn-lg btn-primary" target="_blank"><i class="fa fa-briefcase"></i> Jobs Portal</a>
       </div>
       {% endif %}
     </div>
@@ -44,7 +43,7 @@
 </div>
 
 <div class="row">
-  <div class="col-md-4">
+  <div class="col-md-6">
     <div class="panel panel-primary stat-panel">
       <div class="panel-heading"><div class="text-center">Active Chapters</div></div>
       <a href="{% url 'chapters:list' %}" style="color:inherit">
@@ -52,19 +51,11 @@
       </a>
     </div>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-6">
     <div class="panel panel-primary stat-panel">
       <div class="panel-heading"><div class="text-center">Upcoming Events</div></div>
       <a href="{% url 'core:upcoming' %}" style="color:inherit">
         <div class="panel-body"><div class="text-center"><h1>{{ events.count }}</h1></div></div>
-      </a>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="panel panel-primary stat-panel">
-      <div class="panel-heading"><div class="text-center">Security Jobs</div></div>
-      <a href="http://jobs.null.community/" target="_blank" style="color:inherit">
-        <div class="panel-body"><div class="text-center"><h1><i class="fa fa-external-link"></i></h1></div></div>
       </a>
     </div>
   </div>
@@ -104,7 +95,7 @@
       <div class="panel-heading"><div class="text-center"><h3 class="panel-title">Become a Volunteer</h3></div></div>
       <div class="panel-body">
         <p class="lead text-justify">
-          null is purely driven by volunteers. Volunteers support and contribute in making the community the way it is. Benefits of being a volunteer include a cool @null.community email address, access to null events, mentorship opportunities with the best in the Industry and more. So become a volunteer, now!
+          null is purely driven by volunteers. Volunteers support and contribute in making the community the way it is. Benefits of being a volunteer include a dedicated community email address, access to null events, mentorship opportunities with the best in the Industry and more. So become a volunteer, now!
         </p>
         <a href="{{ CFG_VOLUNTEER_FORM_URL }}" class="btn btn-danger btn-block" target="_blank"><i class="fa fa-user-plus"></i> Become a Volunteer</a>
       </div>
