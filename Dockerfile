@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 RUN apt-get update -y && \
     apt-get install -y build-essential default-libmysqlclient-dev pkg-config && \
