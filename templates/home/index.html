@@ -50,24 +50,46 @@
   </div>
 </div>
 
-<div class="row">
-  <div class="col-md-6">
+{% if chapter_stats %}
+<div class="row text-center" style="margin-bottom:8px">
+  <div class="col-xs-6 col-md-3">
     <div class="panel panel-primary stat-panel">
-      <div class="panel-heading"><div class="text-center">Active Chapters</div></div>
-      <a href="{% url 'chapters:list' %}" style="color:inherit">
-        <div class="panel-body"><div class="text-center"><h1>{{ active_chapters_count }}</h1></div></div>
-      </a>
+      <div class="panel-heading"><div class="text-center">Events Held</div></div>
+      <a href="{% url 'core:archives' %}" style="color:inherit"><div class="panel-body"><div class="text-center"><h1>{{ chapter_stats.events }}</h1></div></div></a>
     </div>
   </div>
-  <div class="col-md-6">
+  <div class="col-xs-6 col-md-3">
     <div class="panel panel-primary stat-panel">
-      <div class="panel-heading"><div class="text-center">Upcoming Events</div></div>
-      <a href="{% url 'core:upcoming' %}" style="color:inherit">
-        <div class="panel-body"><div class="text-center"><h1>{{ events.count }}</h1></div></div>
-      </a>
+      <div class="panel-heading"><div class="text-center">Talks Delivered</div></div>
+      <a href="{% url 'core:session_search' %}" style="color:inherit"><div class="panel-body"><div class="text-center"><h1>{{ chapter_stats.talks }}</h1></div></div></a>
+    </div>
+  </div>
+  <div class="col-xs-6 col-md-3">
+    <div class="panel panel-primary stat-panel">
+      <div class="panel-heading"><div class="text-center">Speakers</div></div>
+      <div class="panel-body"><div class="text-center"><h1>{{ chapter_stats.speakers }}</h1></div></div>
+    </div>
+  </div>
+  <div class="col-xs-6 col-md-3">
+    <div class="panel panel-primary stat-panel">
+      <div class="panel-heading"><div class="text-center">Upcoming</div></div>
+      <a href="{% url 'core:upcoming' %}" style="color:inherit"><div class="panel-body"><div class="text-center"><h1>{{ chapter_stats.upcoming }}</h1></div></div></a>
     </div>
   </div>
 </div>
+<div class="row">
+  <div class="col-md-12 text-center" style="margin-bottom:24px">
+    <p class="lead" style="margin-bottom:4px">
+      {% if chapter_stats.rank %}
+        <i class="fa fa-trophy" style="color:#f0ad4e"></i>
+        <strong>#{{ chapter_stats.rank }}</strong> of {{ chapter_stats.total_chapters }} null chapters worldwide by events held
+      {% endif %}
+    </p>
+    {% if chapter_stats.since_year %}<small class="text-muted">Active since {{ chapter_stats.since_year }} · part of India's largest open security community</small>{% endif %}
+    &nbsp;<a href="{% url 'chapters:list' %}" style="font-size:13px">See where every chapter stands →</a>
+  </div>
+</div>
+{% endif %}
 
 <div class="row">
   <div class="col-md-12">

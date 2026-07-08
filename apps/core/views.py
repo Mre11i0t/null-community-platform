@@ -23,16 +23,54 @@ def home(request):
     """
     if request.chapter is None:
         return directory(request)
+    chapter = request.chapter
     events = (
         Event.objects.future_public_events()
-        .filter(chapter=request.chapter, can_show_on_homepage=True)
+        .filter(chapter=chapter, can_show_on_homepage=True)
         .order_by("start_time")
     )
     return render(
         request,
         "home/index.html",
-        {"events": events, "active_chapters_count": Chapter.active_chapters().count()},
+        {"events": events, "chapter_stats": _chapter_stats(chapter)},
     )
+
+
+def _chapter_stats(chapter):
+    """Per-chapter numbers for the chapter homepage + where the chapter stands
+    across the whole community (rank by events held)."""
+    from django.db.models import Count, Q
+
+    from apps.events.models import Event, EventSession
+
+    events_qs = Event.objects.public_events().filter(chapter=chapter)
+    sessions_qs = EventSession.objects.alive().filter(event__chapter=chapter, placeholder=False)
+
+    total_events = events_qs.count()
+    total_talks = sessions_qs.count()
+    speakers = sessions_qs.values("user_id").distinct().count()
+    first = events_qs.order_by("start_time").values_list("start_time", flat=True).first()
+
+    # Rank this chapter against all active chapters by number of public events.
+    alive = Q(events__public=True, events__deleted_at__isnull=True)
+    ranking = list(
+        Chapter.active_chapters()
+        .annotate(n=Count("events", filter=alive))
+        .order_by("-n")
+        .values_list("id", flat=True)
+    )
+    total_chapters = len(ranking)
+    rank = ranking.index(chapter.id) + 1 if chapter.id in ranking else None
+
+    return {
+        "events": total_events,
+        "talks": total_talks,
+        "speakers": speakers,
+        "upcoming": events_qs.filter(start_time__gt=timezone.now()).count(),
+        "since_year": first.year if first else None,
+        "rank": rank,
+        "total_chapters": total_chapters,
+    }
 
 
 def directory(request):
