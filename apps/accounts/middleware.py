@@ -23,6 +23,16 @@ class Privileged2FAMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        if request.user.is_authenticated:
+            # Already-configured guard: hitting the TOTP *activate* page when an
+            # authenticator is already set up would otherwise walk you through
+            # reauth and let you overwrite it. Send those users to the 2FA
+            # overview (which shows the active authenticator + Deactivate)
+            # instead.
+            if request.path.rstrip("/") == "/accounts/2fa/totp/activate" and user_has_mfa(request.user):
+                messages.info(request, "Two-factor authentication is already set up on your account.")
+                return redirect(reverse("mfa_index"))
+
         if settings.REQUIRE_2FA_FOR_PRIVILEGED and request.user.is_authenticated:
             path = request.path
             # never trap the user out of the MFA setup/auth pages themselves
