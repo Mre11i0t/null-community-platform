@@ -7,9 +7,15 @@ starred sessions, custom questions, and webhook/preference rows.
 Run with: python manage.py shell < scripts/seed_rev3_data.py
 Idempotent — safe to re-run.
 """
+import os
+import secrets
 from datetime import timedelta
 
 from django.utils import timezone
+
+# Never bake "password" into seeded accounts. Pin a value with SEED_PASSWORD in
+# the env for reproducible logins, otherwise a strong one is generated + printed.
+SEED_PASSWORD = os.environ.get("SEED_PASSWORD") or ("null-seed-" + secrets.token_urlsafe(9))
 
 from apps.accounts.models import User
 from apps.chapters.models import Chapter, ChapterLead
@@ -24,7 +30,8 @@ now = timezone.now()
 PRIMARY_CHAPTER = "Bangalore"
 
 
-def make_user(email, name, password="password"):
+def make_user(email, name, password=None):
+    password = password or SEED_PASSWORD
     user, _ = User.objects.get_or_create(email=email, defaults={"name": name, "is_active": True})
     user.set_password(password)
     user.save()
@@ -189,5 +196,6 @@ SessionProposal.objects.get_or_create(
 print("Seeded Rev 3 data:")
 print(f"  primary (populated) chapter: {PRIMARY_CHAPTER} (subdomain {chapters[PRIMARY_CHAPTER].subdomain})")
 print(f"  chapters: {', '.join(c.subdomain for c in chapters.values())} (others are empty shells)")
-print(f"  users: lead@example.com / speaker@example.com / member1..6@example.com / admin@example.com (password: 'password')")
+print(f"  users: lead@example.com / speaker@example.com / member1..6@example.com / admin@example.com")
+print(f"  seed password (all seeded users): {SEED_PASSWORD}  (pin via SEED_PASSWORD env)")
 print(f"  events: #{checkin_event.pk} check-in, #{full_event.pk} waitlist, #{invite_event.pk} approval, #{ended_event.pk} ended")
