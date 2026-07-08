@@ -2,6 +2,8 @@
 {% load static %}
 {% block page_title %}{% if current_chapter %}null {{ current_chapter.name }}{% else %}null Community Platform{% endif %}{% endblock %}
 {% block content %}
+{% load socialaccount %}
+{% get_providers as socialaccount_providers %}
 <div class="row">
   <div class="col-md-12">
     <div class="jumbotron">
@@ -14,6 +16,9 @@
       <div class="text-center btn-cluster">
         {% if not user.is_authenticated %}
           <a href="{% url 'account_signup' %}" class="btn btn-danger btn-lg"><i class="fa fa-group"></i> Join The null Community</a>
+          {% for provider in socialaccount_providers %}
+          <a href="{% provider_login_url provider.id %}" class="btn btn-lg btn-default"><i class="fa fa-{{ provider.id }}"></i> Sign in with {{ provider.name }}</a>
+          {% endfor %}
         {% endif %}
         <a href="{% url 'core:upcoming' %}" class="btn btn-lg btn-primary"><i class="fa fa-calendar"></i> Upcoming Events</a>
         <a href="{% url 'chapters:calendar_ics' current_chapter.pk %}" class="btn btn-lg btn-primary"><i class="fa fa-rss"></i> Subscribe (.ics)</a>
@@ -30,6 +35,9 @@
       <div class="text-center btn-cluster">
         {% if not user.is_authenticated %}
           <a href="{% url 'account_signup' %}" class="btn btn-danger btn-lg"><i class="fa fa-group"></i> Join The null Community</a>
+          {% for provider in socialaccount_providers %}
+          <a href="{% provider_login_url provider.id %}" class="btn btn-lg btn-default"><i class="fa fa-{{ provider.id }}"></i> Sign in with {{ provider.name }}</a>
+          {% endfor %}
         {% endif %}
         <a href="{% url 'core:start_chapter' %}" class="btn btn-lg btn-danger btn-primary"><i class="fa fa-thumb-tack"></i> Start a Chapter</a>
       </div>

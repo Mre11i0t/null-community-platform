@@ -326,6 +326,7 @@ _CSP_SCRIPT_SRC = (
     "https://checkout.razorpay.com",
     "https://www.google.com/recaptcha/",
     "https://www.gstatic.com/recaptcha/",
+    "https://cdn.jsdelivr.net",  # drf-spectacular Swagger UI assets
     "'unsafe-inline'",
 )
 # Google Maps JavaScript API (root-directory chapter pin map). The map only
@@ -336,7 +337,7 @@ GOOGLE_MAPS_API_KEY = env("GOOGLE_MAPS_API_KEY", default="")
 # Maps JS pulls its loader from maps.googleapis.com (script), makes XHR to
 # maps.googleapis.com (connect), and fetches tiles from maps.gstatic.com +
 # *.googleapis.com (img — already covered by the https: source).
-_CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com")
+_CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net")
 _CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com", "data:")
 _CSP_IMG_SRC = ("'self'", "data:", "https:")
 _CSP_FRAME_SRC = ("'self'", "https://www.google.com/recaptcha/")
