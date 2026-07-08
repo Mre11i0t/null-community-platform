@@ -257,6 +257,20 @@ def dispatch_event_notifications() -> None:
         event.notification_state = Event.STATE_PRESENTATION_UPDATE
         event.save(update_fields=["notification_state"])
 
+    # Terminal transition: once the presentation-upload window has passed
+    # (speakers get ~7 days after the event to add slides — see the 30-day
+    # session edit window), the machine reaches Finished. No email fires on
+    # this state; it just closes out the sequence the PRD/model document
+    # (Init -> ... -> PresentationUpdate -> Finished).
+    finished_events = Event.objects.filter(
+        public=True,
+        notification_state=Event.STATE_PRESENTATION_UPDATE,
+        end_time__lte=now - timezone.timedelta(days=7),
+    )
+    for event in finished_events:
+        event.notification_state = Event.STATE_FINISHED
+        event.save(update_fields=["notification_state"])
+
 
 def _create_and_run(event, mode):
     task = EventAutomaticNotificationTask.objects.create(event=event, mode=mode)

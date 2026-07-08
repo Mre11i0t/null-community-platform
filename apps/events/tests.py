@@ -73,6 +73,69 @@ def test_rsvp_creates_confirmed_registration_for_non_invite_only_event(client):
     assert registration.state == EventRegistration.STATE_CONFIRMED
 
 
+def test_rsvp_sends_confirmation_email_to_member(client):
+    """PRD Part 7: a member gets a registration-confirmation email on a
+    successful (confirmed) RSVP. The pre-fix code sent no email at all."""
+    from django.core import mail
+
+    event = EventFactory()
+    user = UserFactory(email="rsvp@example.com")
+    client.force_login(user)
+
+    mail.outbox.clear()  # drop the admin-on-create email fired by EventFactory
+    client.post(
+        reverse("events:registration_new", args=[event.pk]),
+        {"visible": "on", "g-recaptcha-response": "PASSED"},
+    )
+
+    assert len(mail.outbox) == 1
+    msg = mail.outbox[0]
+    assert msg.to == ["rsvp@example.com"]
+    assert event.name in msg.subject
+    # No check-in code when the event has check-in disabled (the default).
+    assert "Check-in code" not in msg.body
+
+
+def test_rsvp_confirmation_email_carries_check_in_code_when_enabled(client):
+    """PRD 3.7: when the event opts into on-site check-in, the confirmation
+    email carries the member's check-in code + QR-pass link."""
+    from django.core import mail
+
+    event = EventFactory(check_in_enabled=True)
+    user = UserFactory()
+    client.force_login(user)
+
+    mail.outbox.clear()  # drop the admin-on-create email fired by EventFactory
+    client.post(
+        reverse("events:registration_new", args=[event.pk]),
+        {"visible": "on", "g-recaptcha-response": "PASSED"},
+    )
+
+    registration = EventRegistration.objects.get(event=event, user=user)
+    body = mail.outbox[0].body
+    assert "Check-in code" in body
+    assert registration.check_in_code in body
+    assert f"/registrations/{registration.pk}/qr.png" in body
+
+
+def test_invite_only_rsvp_sends_no_confirmation_email(client):
+    """A provisional (invite-only) RSVP is not yet confirmed, so no
+    confirmation email fires — it waits for leader approval."""
+    from django.core import mail
+
+    invite_only_type = EventTypeFactory(name="Invite Only Confirm Test", invitation_required=True)
+    event = EventFactory(event_type=invite_only_type)
+    client.force_login(UserFactory())
+
+    mail.outbox.clear()  # drop the admin-on-create email fired by EventFactory
+    client.post(
+        reverse("events:registration_new", args=[event.pk]),
+        {"visible": "on", "g-recaptcha-response": "PASSED"},
+    )
+
+    assert mail.outbox == []
+
+
 def test_rsvp_creates_provisional_registration_for_invite_only_event(client):
     invite_only_type = EventTypeFactory(name="Invite Only Type", invitation_required=True)
     event = EventFactory(event_type=invite_only_type)

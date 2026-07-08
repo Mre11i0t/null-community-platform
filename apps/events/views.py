@@ -174,6 +174,8 @@ def registration_new(request, event_id):
                 )
             else:
                 messages.success(request, "You have successfully registered with the event.")
+                if registration.confirmed():
+                    _send_registration_confirmation(registration)
             return redirect("events:detail", pk=event.pk)
     else:
         form = EventRegistrationForm(instance=blank_registration)
@@ -182,6 +184,39 @@ def registration_new(request, event_id):
         request,
         "events/registration_new.html",
         {"event": event, "form": form, "already_registered": already_registered},
+    )
+
+
+def _send_registration_confirmation(registration):
+    """Rev 3 / PRD Part 7: email the member on a successful RSVP. When the
+    event has on-site check-in enabled, the mail also carries the check-in
+    code + a link to the QR pass (which otherwise only appeared on the RSVP
+    page — see PRD 3.7). fail_silently so a mail hiccup never breaks the RSVP."""
+    from django.conf import settings
+    from django.core.mail import send_mail
+    from django.template.loader import render_to_string
+    from django.urls import reverse
+
+    event = registration.event
+    user = registration.user
+    if not user or not user.email:
+        return
+    base = event.chapter.site_url()
+    check_in = event.check_in_enabled
+    context = {
+        "registration": registration,
+        "event": event,
+        "event_url": base + reverse("events:detail", args=[event.pk]),
+        "check_in_code": registration.check_in_code if check_in else "",
+        "qr_url": (base + reverse("events:registration_qr", args=[event.pk, registration.pk])) if check_in else "",
+    }
+    body = render_to_string("events/emails/registration_confirmation.txt", context)
+    send_mail(
+        f"You're registered: {event.descriptive_name()}",
+        body,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+        fail_silently=True,
     )
 
 
@@ -482,4 +517,7 @@ def detail_by_name(request, name):
         from django.http import Http404
 
         raise Http404
-    return redirect("events:detail", pk=event.pk)
+    # Permanent (301): the slug alias exists only to consolidate link
+    # equity onto the canonical /events/:id URL, so search engines should
+    # treat it as a permanent move rather than a temporary redirect.
+    return redirect("events:detail", pk=event.pk, permanent=True)

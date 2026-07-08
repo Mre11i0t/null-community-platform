@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#222222">
   <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
   <link rel="apple-touch-icon" href="{% static 'images/favicon.svg' %}">
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="{% block twitter_card %}summary{% endblock %}">
   <meta name="twitter:site" content="@null0x00">
   <meta name="twitter:title" content="{% block title %}{{ CFG_APP_TITLE }}{% endblock %}">
   <meta name="twitter:description" content="{% block description %}{{ CFG_APP_DESCRIPTION }}{% endblock %}">

@@ -44,6 +44,33 @@ def test_chapter_home_shows_future_public_events(client):
     assert past not in response.context["events"]
 
 
+def test_chapter_home_honors_can_show_on_homepage_flag(client):
+    """A future public event with can_show_on_homepage=False must NOT
+    appear on the chapter homepage (the flag was editable by leads but
+    previously consumed by zero queries, so unchecking it did nothing)."""
+    chapter = ChapterFactory(active=True, name="Homefilter")
+    shown = EventFactory(
+        chapter=chapter,
+        public=True,
+        can_show_on_homepage=True,
+        start_time=timezone.now() + datetime.timedelta(days=1),
+        end_time=timezone.now() + datetime.timedelta(days=1, hours=1),
+    )
+    hidden = EventFactory(
+        chapter=chapter,
+        public=True,
+        can_show_on_homepage=False,
+        start_time=timezone.now() + datetime.timedelta(days=2),
+        end_time=timezone.now() + datetime.timedelta(days=2, hours=1),
+    )
+
+    response = client.get("/", HTTP_HOST="homefilter.localhost")
+
+    assert response.status_code == 200
+    assert shown in response.context["events"]
+    assert hidden not in response.context["events"]
+
+
 def test_root_home_is_the_chapter_directory(client):
     active = ChapterFactory(active=True)
     ChapterFactory(active=False)
@@ -202,6 +229,8 @@ def test_event_page_has_json_ld_and_canonical(client):
     assert 'rel="canonical"' in body
     assert event.chapter.site_url() in body
     assert 'property="og:title"' in body
+    assert 'property="og:image"' in body  # Rev 3 fix: OG image card was absent
+    assert 'name="twitter:image"' in body
 
 
 # --- Rails-parity closures (Rev 3) --------------------------------------------
@@ -229,7 +258,7 @@ def test_event_name_alias_redirects_to_canonical(client):
     assert event.slug == "monthly-meetup-july"
 
     response = client.get(f"/event/{event.slug}")
-    assert response.status_code == 302
+    assert response.status_code == 301  # permanent: consolidates link equity onto canonical URL
     assert response.url == f"/events/{event.pk}/"
 
     assert client.get("/event/nonexistent-thing").status_code == 404

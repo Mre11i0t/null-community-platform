@@ -1,0 +1,17 @@
+Hi {{ registration.user.name|default:registration.user.email }},
+
+You're confirmed for {{ event.descriptive_name }}.
+
+  When:  {{ event.start_time|date:"D, d M Y, H:i" }}
+{% if event.venue %}  Where: {{ event.venue.name }}{% if event.venue.address %}, {{ event.venue.address }}{% endif %}
+{% endif %}{% if check_in_code %}
+On-site check-in is enabled for this event. Show this code (or the QR
+pass on your RSVP page) at the door:
+
+  Check-in code: {{ check_in_code }}
+  QR pass:       {{ qr_url }}
+{% endif %}
+Event details / withdraw: {{ event_url }}
+
+See you there,
+null Community

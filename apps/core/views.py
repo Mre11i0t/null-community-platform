@@ -23,7 +23,11 @@ def home(request):
     """
     if request.chapter is None:
         return directory(request)
-    events = Event.objects.future_public_events().filter(chapter=request.chapter).order_by("start_time")
+    events = (
+        Event.objects.future_public_events()
+        .filter(chapter=request.chapter, can_show_on_homepage=True)
+        .order_by("start_time")
+    )
     return render(
         request,
         "home/index.html",

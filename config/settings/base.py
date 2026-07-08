@@ -335,9 +335,16 @@ NOTIFICATION_ADMIN_EVENT_CREATE = env.list("NOTIFICATION_ADMIN_EVENT_CREATE", de
 # Used to build absolute URLs inside emails, where there is no request object.
 SITE_BASE_URL = env("SITE_BASE_URL", default="http://localhost:8000")
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = env("MAILGUN_SMTP_HOST", default="localhost")
-EMAIL_PORT = env.int("MAILGUN_SMTP_PORT", default=25)
-EMAIL_HOST_USER = env("MAILGUN_SMTP_USER", default="")
-EMAIL_HOST_PASSWORD = env("MAILGUN_SMTP_PASSWORD", default="")
+# Fall back to SMTP only when the Mailgun API backend above is NOT
+# configured. This block runs later in the module than the
+# `if MAILGUN_API_KEY:` guard, so setting EMAIL_BACKEND unconditionally
+# here would clobber the anymail backend and make MAILGUN_API_KEY dead —
+# the env-gating the PRD (Part 6) promises. (dev.py/test.py override
+# EMAIL_BACKEND after this regardless, so the bug only bit prod.)
+if not MAILGUN_API_KEY:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = env("MAILGUN_SMTP_HOST", default="localhost")
+    EMAIL_PORT = env.int("MAILGUN_SMTP_PORT", default=25)
+    EMAIL_HOST_USER = env("MAILGUN_SMTP_USER", default="")
+    EMAIL_HOST_PASSWORD = env("MAILGUN_SMTP_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@null.community")

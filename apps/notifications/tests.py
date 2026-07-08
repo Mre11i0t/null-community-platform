@@ -287,6 +287,15 @@ def test_dispatch_advances_through_full_state_machine():
         executed=True,
     ).exists()
 
+    # Finished: once the presentation-upload window (~7 days) has elapsed,
+    # the machine reaches its terminal state. Previously it stalled forever
+    # at PresentationUpdate and never reached Finished (defined but unused).
+    event.end_time = now - datetime.timedelta(days=8)
+    event.save(update_fields=["end_time"])
+    dispatch_event_notifications()
+    event.refresh_from_db()
+    assert event.notification_state == Event.STATE_FINISHED
+
 
 def test_dispatch_is_idempotent_once_state_has_advanced():
     event = EventFactory(public=True, ready_for_notifications=True, notification_state=Event.STATE_INIT)
