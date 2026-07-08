@@ -296,3 +296,12 @@ static/           css/, js/, images/ copied verbatim from app/assets/;
 Every model file has a docstring pointing back to the original Rails
 model it was ported from (e.g. "See app/models/event.rb") — use that
 as the source of truth when implementing the remaining features.
+
+## Documentation
+
+Full docs live in [`docs/`](docs/README.md): architecture, feature catalogue,
+data model, local development, deployment, and upgrade/migration paths.
+
+---
+
+*Made with [Claude Code](https://claude.com/claude-code).*
