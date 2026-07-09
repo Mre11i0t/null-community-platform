@@ -83,6 +83,44 @@ def test_root_home_is_the_chapter_directory(client):
     assert "events" not in response.context  # no aggregated event listing
 
 
+def test_chapter_home_exposes_chapter_stats_and_world_rank(client):
+    """The chapter homepage surfaces that chapter's own numbers + where it
+    ranks across the community, instead of a generic active-chapters count."""
+    from tests.factories import EventSessionFactory
+
+    chapter = ChapterFactory(active=True, name="Statschap")
+    past = timezone.now() - datetime.timedelta(days=5)
+    event = EventFactory(chapter=chapter, public=True, start_time=past, end_time=past + datetime.timedelta(hours=2))
+    EventSessionFactory(event=event, placeholder=False)
+    ChapterFactory(active=True)  # a second chapter so rank/total is meaningful
+
+    response = client.get("/", HTTP_HOST="statschap.localhost")
+
+    assert response.status_code == 200
+    stats = response.context["chapter_stats"]
+    assert stats["events"] == 1
+    assert stats["talks"] == 1
+    assert stats["total_chapters"] >= 2
+    assert stats["rank"] is not None
+    assert stats["since_year"] == past.year
+
+
+def test_directory_map_pins_only_include_geocoded_chapters(client):
+    """The root directory's map data includes only chapters that have been
+    geocoded; ungeocoded chapters are simply not plotted."""
+    import json
+
+    ChapterFactory(active=True, name="Plotted", latitude="12.9716", longitude="77.5946")
+    ChapterFactory(active=True, name="Unplotted")  # no coords
+
+    response = client.get(reverse("core:home"))
+
+    pins = json.loads(response.context["map_pins_json"])
+    names = {p["name"] for p in pins}
+    assert "Plotted" in names
+    assert "Unplotted" not in names
+
+
 def test_start_chapter_application_emails_admins(client):
     from django.core import mail
 

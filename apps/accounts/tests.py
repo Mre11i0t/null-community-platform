@@ -197,6 +197,65 @@ def test_2fa_required_for_leads_when_enforced(client, settings):
     assert client.get(reverse("core:home")).status_code == 200
 
 
+def _activate_totp(user):
+    """Give a user an active TOTP authenticator (for the guard tests)."""
+    import allauth.mfa.totp.internal.auth as ta
+
+    ta.TOTP.activate(user, "JBSWY3DPEHPK3PXP")
+
+
+def test_2fa_activate_redirects_to_overview_when_already_configured(client):
+    """Visiting the TOTP activate page when 2FA is already set up should
+    bounce to the 2FA overview, not walk through reauth + let it be
+    overwritten (Privileged2FAMiddleware guard)."""
+    user = UserFactory()
+    _activate_totp(user)
+    client.force_login(user)
+
+    response = client.get("/accounts/2fa/totp/activate/")
+
+    assert response.status_code == 302
+    assert response.url == reverse("mfa_index")
+
+
+def test_2fa_activate_reachable_when_not_configured(client):
+    """A user without 2FA is NOT bounced to the overview — the activate flow
+    stays reachable (goes through reauth, not to mfa_index)."""
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.get("/accounts/2fa/totp/activate/")
+
+    # not the already-configured redirect
+    assert not (response.status_code == 302 and response.url == reverse("mfa_index"))
+
+
+def test_provider_login_while_authenticated_redirects_to_next(client):
+    """An already-logged-in user hitting a provider login URL should be sent
+    straight to ?next instead of an OAuth 'sign in' flow (middleware guard).
+    The guard fires before URL resolution, so it works even without the
+    provider app installed in test settings."""
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.get("/accounts/google/login/?next=/upcoming")
+
+    assert response.status_code == 302
+    assert response.url == "/upcoming"
+
+
+def test_provider_connect_while_authenticated_is_not_intercepted(client):
+    """process=connect is a legitimate 'link this provider to my account'
+    flow while logged in — the guard must NOT swallow it."""
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.get("/accounts/google/login/?process=connect")
+
+    # not the guard's redirect-to-next (which would go to LOGIN_REDIRECT_URL "/")
+    assert not (response.status_code == 302 and response.url == "/")
+
+
 def test_profile_edit_updates_fields(client):
     user = UserFactory()
     client.force_login(user)
