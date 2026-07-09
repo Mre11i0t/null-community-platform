@@ -3,14 +3,12 @@
 {% block content %}
 <div class="row">
   <div class="col-md-12">
-    <div class="page-header">
-      <h2>
-        Managed Sessions <small>{{ event.descriptive_name }}</small>
-        <span class="pull-right">
-          <a href="{% url 'leads:event_show' event.pk %}" class="btn btn-primary">Back to Event</a>
-          <a href="{% url 'leads:session_new' event.pk %}" class="btn btn-primary">Create Session</a>
-        </span>
-      </h2>
+    <div class="page-header clearfix">
+      <div class="pull-right" style="margin-top:18px">
+        <a href="{% url 'leads:event_show' event.pk %}" class="btn btn-primary">Back to Event</a>
+        <a href="{% url 'leads:session_new' event.pk %}" class="btn btn-primary">Create Session</a>
+      </div>
+      <h2 style="margin-top:0">Managed Sessions <small>{{ event.descriptive_name }}</small></h2>
     </div>
   </div>
 </div>
