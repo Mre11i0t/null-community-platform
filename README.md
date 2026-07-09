@@ -120,62 +120,53 @@ concretely means in practice.
   years ago, so that tab has been broken in the original app itself
   for a long time regardless of this port.
 
-### Explicitly NOT done or only partially done
+### Since resolved (this list was from the early port; kept for the record)
 
-- **Celery beat is not started in dev.** `dispatch_event_notifications`
-  (the time-based reminder scheduler) and the Celery worker in general
-  only run because `CELERY_TASK_ALWAYS_EAGER=True` makes `.delay()`
-  execute synchronously in-process. Nothing calls
-  `dispatch_event_notifications` on a schedule unless you run
-  `celery -A config beat` (and a separate `celery -A config worker` in
-  a real, non-eager deployment) alongside the Django process.
-- **Google Calendar sync** (`Event#event_update_calendar`) and
-  **Twitter/IFTTT posting** (`IftttMailer`): left as
-  `NotImplementedError` stubs in `apps/notifications/tasks.py`, not
-  wired to any trigger. Both need credentials this environment doesn't
-  have (a Google service account + calendar ID, an IFTTT Maker webhook
-  key) — not faked.
-- **Chapter map** (homepage + chapter directory): the original used a
-  live Google Maps pin map via Geocoder. Left out rather than faked —
-  needs a Maps API key and geocoding integration. Its two supporting
-  JSON endpoints (`chapters#leaders`, `chapters#upcoming_events`)
-  aren't ported either for the same reason; the same data is already
-  available server-rendered on the chapter detail page.
-- **Swagger UI** (`/api-v2/schema/swagger/`) renders blank in this
-  sandbox's browser automation tool because `swagger-ui-dist`'s CDN
-  (jsdelivr) 503s through that specific network path; the underlying
-  `/api-v2/schema/` OpenAPI JSON was verified directly and is correct.
-  Likely fine in a normal browser — flagged here because it wasn't
-  confirmed in one.
-- **Production settings are unverified.** `prod.py` (real
-  `mysqlclient`, `DEBUG=False`, `collectstatic`, SMTP email, real
-  reCAPTCHA keys, S3/whatever static storage) has not been booted or
-  tested this session — only `dev.py` has.
-- **Social login (`/auth/:provider/callback`)**: `django-allauth`'s
-  social-account app is not configured with any OAuth client
-  credentials — the `UserAuthProfile` model (schema equivalent) exists
-  but no provider is wired up.
-- **Slack integration** (`/api/slackbot/events`) and the old pre-Grape
-  `/api/*` endpoints (`authenticate`, `check_authentication`,
-  `user_registrations`, `user_autocomplete`): not ported. The `/api/*`
-  ones are superseded in spirit by `/api-v2/*` (password auth, per-user
-  events/sessions); `user_autocomplete`'s job (speaker search when
-  leads create sessions) is covered client-side in
-  `templates/leads/event_sessions/form.html`. Slack needs a bot token
-  this environment doesn't have. `/api/register` in the original
-  routes has no controller action at all — a dead route even there.
-- **Session library / search page** (`/event_sessions` — browse and
-  full-text-search all past sessions site-wide, distinct from the
-  per-user "My Sessions" page above): not built. Still linked as
-  "(coming soon)" in the nav.
-- **Per-page edit permissions**: the original let non-admin users with
-  a `PageAccessPermission` row edit specific CMS pages in place
-  (`/pages/:id/edit`). Django admin can edit `Page` rows for staff
-  users, which covers the admin case but not that narrower
-  per-page-per-user grant — not ported.
-- **`/event/:name` SEO-friendly event URL** (slug-based alias for
-  `/events/:id`): not ported: low-value, `/events/<id>/` covers the
-  same page.
+Several items previously flagged here have since been built or fixed. For the
+authoritative, code-grounded picture see [`docs/FEATURES.md`](docs/FEATURES.md)
+and [`docs/rev3-delivery-audit.md`](docs/rev3-delivery-audit.md).
+
+- ✅ **Chapter directory pin map** — built. `Chapter` now carries
+  `latitude`/`longitude`; the root directory renders a Google Maps pin map
+  (`GOOGLE_MAPS_API_KEY`, env-gated — falls back to the plain grid without a
+  key). The `chapters#leaders` / `chapters#upcoming_events` JSON endpoints are
+  ported (`leaders_json`, `upcoming_events_json`).
+- ✅ **Swagger UI** (`/api-v2/swagger/`) — renders (the CSP now allows the
+  `cdn.jsdelivr.net` assets); verified in a real browser.
+- ✅ **Social login** — Google OAuth wired via `django-allauth`, env-gated
+  (`GOOGLE_OAUTH_CLIENT_ID`/`_SECRET`); buttons on login/signup/landing.
+- ✅ **Session library / search** — `/sessions/` (site-wide talk archive with
+  tag + `has_reference` filters); legacy `/event_sessions` aliased.
+- ✅ **Per-page edit permissions** — `PageAccessPermission` (ReadWrite/ReadOnly)
+  enforced at `/pages/<slug>/edit/`.
+- ✅ **`/event/:name` alias** — ported as a 301 redirect onto the canonical
+  `/events/<id>/`.
+- ✅ **Production static/media + CSRF** — `prod.py` fixed (WhiteNoise
+  compressed static, S3-or-local media via `STORAGES`, `CSRF_TRUSTED_ORIGINS`);
+  CI now runs `manage.py check --deploy` under `config.settings.prod`.
+
+### Intentionally dropped / replaced (Rev 3 decisions)
+
+- **Twitter/IFTTT posting** — dropped; replaced by pluggable broadcast channels
+  (Discord/Slack/Telegram webhooks + optional X API v2). The IFTTT path is dead
+  upstream.
+- **Slack inbound bot** + the legacy pre-Grape `/api/*` (v1) endpoints — dropped
+  by design; outbound broadcast + webhooks cover the Slack use case, and the
+  rewrite ships only `/api-v2/*`.
+
+### Genuinely still stub / credential-gated / ops-dependent
+
+- **Celery beat** — `dispatch_event_notifications` (time-based reminders) runs
+  via `celery -A config beat` + a `worker` in a real deployment
+  (`CELERY_BEAT_SCHEDULE` is defined in `base.py`). In dev/showcase,
+  `CELERY_TASK_ALWAYS_EAGER=True` runs `.delay()` in-process, so on-demand mail
+  fires but scheduled sweeps need beat. By design, not a bug.
+- **Google Calendar sync** — a credential-gated stub (`apps/notifications`);
+  needs a Google service account + calendar ID. Degrades to no-op without them.
+- **Full production boot** — `prod.py` is smoke-checked in CI
+  (`check --deploy`) but a real prod boot with `mysqlclient` + real SMTP/S3/
+  reCAPTCHA keys is deployment-time; see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+  and [`docs/UPGRADING.md`](docs/UPGRADING.md).
 
 A from-scratch database was created and `migrate`d against with no
 manual intervention (`makemigrations --check --dry-run` → "No changes
