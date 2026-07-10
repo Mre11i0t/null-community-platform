@@ -63,6 +63,8 @@ ACCOUNT_EMAIL_VERIFICATION = "optional"
 if not env("RECAPTCHA_PUBLIC_KEY", default=""):  # noqa: F405
     RECAPTCHA_PUBLIC_KEY = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
     RECAPTCHA_PRIVATE_KEY = "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"
+    # The test keys are v2-only; ignore any RECAPTCHA_WIDGET=v3 left in the env.
+    RECAPTCHA_WIDGET = "v2_checkbox"
     SILENCED_SYSTEM_CHECKS = ["django_recaptcha.recaptcha_test_key_error"]
 
 # Keep the demo frictionless: don't force TOTP enrolment before admins/leads

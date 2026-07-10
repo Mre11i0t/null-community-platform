@@ -1,6 +1,6 @@
 from django import forms
-from django_recaptcha.fields import ReCaptchaField
-from django_recaptcha.widgets import ReCaptchaV2Checkbox
+
+from apps.core.captcha import build_captcha_field
 
 from .models import EventRegistration, EventSessionComment
 
@@ -12,7 +12,7 @@ class EventRegistrationForm(forms.ModelForm):
     a list of {"label", "required"}) become real form fields, and answers
     land in EventRegistration.custom_answers."""
 
-    captcha = ReCaptchaField(widget=ReCaptchaV2Checkbox)
+    captcha = build_captcha_field(action="rsvp")
 
     class Meta:
         model = EventRegistration
@@ -64,7 +64,7 @@ class EventRegistrationForm(forms.ModelForm):
 class EventSessionCommentForm(forms.ModelForm):
     """Ported from app/views/event_session_comments (create action's reCAPTCHA)."""
 
-    captcha = ReCaptchaField(widget=ReCaptchaV2Checkbox)
+    captcha = build_captcha_field(action="session_comment")
 
     class Meta:
         model = EventSessionComment

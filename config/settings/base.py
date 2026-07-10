@@ -307,9 +307,14 @@ X_CONSUMER_SECRET = env("X_CONSUMER_SECRET", default="")
 X_ACCESS_TOKEN = env("X_ACCESS_TOKEN", default="")
 X_ACCESS_TOKEN_SECRET = env("X_ACCESS_TOKEN_SECRET", default="")
 
-# reCAPTCHA — used on signup, RSVP, and session comments in the original app
+# reCAPTCHA — used on signup, RSVP, and session comments in the original app.
+# RECAPTCHA_WIDGET picks the widget to match the key type: "v2_checkbox"
+# (default; what Google's published test keys support) or "v3" for
+# score-based keys, which cannot render a checkbox (see apps/core/captcha.py).
 RECAPTCHA_PUBLIC_KEY = env("RECAPTCHA_PUBLIC_KEY", default="")
 RECAPTCHA_PRIVATE_KEY = env("RECAPTCHA_PRIVATE_KEY", default="")
+RECAPTCHA_WIDGET = env("RECAPTCHA_WIDGET", default="v2_checkbox")
+RECAPTCHA_REQUIRED_SCORE = env.float("RECAPTCHA_REQUIRED_SCORE", default=0.5)
 
 # Content Security Policy — the original Rails app had no CSP at all
 # Content Security Policy.

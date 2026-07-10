@@ -157,7 +157,8 @@ re-seeding.
   to showcase TOTP enrolment on admin/lead accounts.
 - **reCAPTCHA** uses Google's public test keys (they always pass; the widget
   shows a "for testing" note). Set `RECAPTCHA_PUBLIC_KEY`/`_PRIVATE_KEY` for
-  real keys.
+  real keys — and if they are score-based **v3** keys (not v2 checkbox), also
+  set `RECAPTCHA_WIDGET=v3`, or the widget dies with "Invalid key type".
 - **Media** (uploaded images) is served off local disk by Django. Fine for a
   demo; wire S3 (`AWS_STORAGE_BUCKET_NAME`) for real traffic.
 - This is a **demo** posture, not a hardened production deploy (single host,
