@@ -47,7 +47,7 @@ cp .env.example .env
 
 `.env.example` sets `MYSQL_SERVER=127.0.0.1`, `MYSQL_PORT=3307`, `MYSQL_DATABASE=swachalit`, `MYSQL_USERNAME=root`, `MYSQL_PASSWORD=s0m3p4ssw0rd`, and `REDIS_URL=redis://127.0.0.1:6380/0`. (Without a `.env`, `base.py` defaults to `HOST=db`/`PORT=3306`, which only works from inside the compose network.)
 
-`manage.py` defaults `DJANGO_SETTINGS_MODULE` to `config.settings.dev` — the dev settings enable `DEBUG`, the console email backend, `ACCOUNT_EMAIL_VERIFICATION="optional"`, eager Celery (`CELERY_TASK_ALWAYS_EAGER=True`), and reCAPTCHA test keys. (WSGI/ASGI default to `config.settings.prod`.)
+`manage.py` defaults `DJANGO_SETTINGS_MODULE` to `config.settings.dev` — the dev settings enable `DEBUG`, the console email backend, `ACCOUNT_EMAIL_VERIFICATION="optional"`, eager Celery (`CELERY_TASK_ALWAYS_EAGER=True`), and reCAPTCHA test keys (v2 checkbox, always passes) unless real keys are set in the env / `.env` — score-based v3 keys also need `RECAPTCHA_WIDGET=v3` and `localhost` among the key's allowed domains in the Google console. The test suite (`config.settings.test`) always pins the test keys, so real keys in `.env` can't break it. (WSGI/ASGI default to `config.settings.prod`.)
 
 ## Migrate & run
 

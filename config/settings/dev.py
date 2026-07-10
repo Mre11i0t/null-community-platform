@@ -18,11 +18,18 @@ CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=True)  #
 # email link on every fresh migrate.
 ACCOUNT_EMAIL_VERIFICATION = "optional"
 
-# django-recaptcha's official published test keys — the widget always
-# shows a pre-checked checkbox and Google's siteverify endpoint always
-# returns success for these specific keys (server-side verification
-# still makes a real HTTP call to Google, just always passes). See
+# Real reCAPTCHA keys from the env (e.g. the repo-root .env) win, together
+# with their RECAPTCHA_WIDGET — for score-based v3 keys to render in dev,
+# add localhost to the key's allowed domains in the Google console.
+# Without env keys, fall back to django-recaptcha's official published test
+# keys — the widget always shows a pre-checked checkbox and Google's
+# siteverify endpoint always returns success for these specific keys
+# (server-side verification still makes a real HTTP call to Google, just
+# always passes). The test keys are v2-only (Google publishes no v3 test
+# keys), so the fallback pins the checkbox widget. See
 # https://developers.google.com/recaptcha/docs/faq#id-like-to-run-automated-tests-with-recaptcha-what-should-i-do
-RECAPTCHA_PUBLIC_KEY = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
-RECAPTCHA_PRIVATE_KEY = "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"
-SILENCED_SYSTEM_CHECKS = ["django_recaptcha.recaptcha_test_key_error"]
+if not env("RECAPTCHA_PUBLIC_KEY", default=""):  # noqa: F405
+    RECAPTCHA_PUBLIC_KEY = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"
+    RECAPTCHA_PRIVATE_KEY = "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe"
+    RECAPTCHA_WIDGET = "v2_checkbox"
+    SILENCED_SYSTEM_CHECKS = ["django_recaptcha.recaptcha_test_key_error"]
