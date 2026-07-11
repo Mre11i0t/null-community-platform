@@ -48,17 +48,8 @@ def send_whatsapp(to_number, message):
         timeout=10,
     )
     if response.status_code >= 400:
-        # log only stable identifiers from the error payload — Meta error
-        # bodies can echo the recipient's phone number
-        try:
-            error = response.json().get("error") or {}
-        except (ValueError, AttributeError):
-            error = {}
-        logger.warning(
-            "WhatsApp send failed (HTTP %s): error code=%s type=%s",
-            response.status_code,
-            error.get("code"),
-            error.get("type"),
-        )
+        # never log the error body — Meta error payloads can echo the
+        # recipient's phone number
+        logger.warning("WhatsApp send failed (HTTP %s)", response.status_code)
         return False
     return True
