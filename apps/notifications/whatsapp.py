@@ -21,12 +21,17 @@ def whatsapp_configured():
     return bool(settings.WHATSAPP_API_TOKEN and settings.WHATSAPP_PHONE_NUMBER_ID)
 
 
+def _mask(number):
+    """Recipient numbers are personal data — logs get the last 4 digits only."""
+    return f"…{number[-4:]}" if number else number
+
+
 def send_whatsapp(to_number, message):
     """Send a text message; returns True if actually dispatched."""
     if not to_number:
         return False
     if not whatsapp_configured():
-        logger.info("WhatsApp (dry-run, not configured) to %s: %s", to_number, message[:120])
+        logger.info("WhatsApp (dry-run, not configured) to %s: %s", _mask(to_number), message[:120])
         return False
 
     import requests
@@ -43,6 +48,17 @@ def send_whatsapp(to_number, message):
         timeout=10,
     )
     if response.status_code >= 400:
-        logger.warning("WhatsApp send failed (%s): %s", response.status_code, response.text[:300])
+        # log only stable identifiers from the error payload — Meta error
+        # bodies can echo the recipient's phone number
+        try:
+            error = response.json().get("error") or {}
+        except (ValueError, AttributeError):
+            error = {}
+        logger.warning(
+            "WhatsApp send failed (HTTP %s): error code=%s type=%s",
+            response.status_code,
+            error.get("code"),
+            error.get("type"),
+        )
         return False
     return True

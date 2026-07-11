@@ -440,14 +440,22 @@ def _mock_post(monkeypatch, status=200):
         status_code = status
         text = "ok"
 
-    def fake_post(url, data=None, headers=None, timeout=None):
+    def fake_post(url, data=None, headers=None, timeout=None, **kwargs):
         calls.append({"url": url, "data": data, "headers": headers})
         return FakeResponse()
 
     import requests
 
     monkeypatch.setattr(requests, "post", fake_post)
+    _mock_public_dns(monkeypatch)
     return calls
+
+
+def _mock_public_dns(monkeypatch, address="93.184.216.34"):
+    """Keep the SSRF guard off real DNS in tests."""
+    from apps.notifications import webhooks
+
+    monkeypatch.setattr(webhooks, "_resolved_addresses", lambda hostname, port: {address})
 
 
 def test_event_publish_fires_signed_webhook(monkeypatch):
@@ -514,10 +522,11 @@ def test_registration_webhooks_created_and_checked_in(monkeypatch):
     assert "registration.checked_in" in kinds
 
 
-def test_webhook_lead_ui_add_and_remove(client):
+def test_webhook_lead_ui_add_and_remove(client, monkeypatch):
     from apps.notifications.models import WebhookEndpoint
     from tests.factories import ChapterLeadFactory
 
+    _mock_public_dns(monkeypatch)
     lead = ChapterLeadFactory()
     client.force_login(lead.user)
 
@@ -540,6 +549,33 @@ def test_webhook_lead_ui_add_and_remove(client):
     client.force_login(lead.user)
     client.post(reverse("leads:webhook_delete", args=[endpoint.pk]))
     assert WebhookEndpoint.objects.count() == 0
+
+
+def test_webhook_ssrf_guard_blocks_private_hosts(client, monkeypatch):
+    from apps.notifications.models import WebhookDelivery, WebhookEndpoint
+    from apps.notifications.webhooks import deliver_webhook
+    from tests.factories import ChapterLeadFactory
+
+    calls = _mock_post(monkeypatch)
+    _mock_public_dns(monkeypatch, address="10.0.0.5")
+
+    lead = ChapterLeadFactory()
+    client.force_login(lead.user)
+
+    # rejected at registration
+    client.post(
+        reverse("leads:webhook_index"),
+        {"chapter": lead.chapter.pk, "url": "https://internal.example.com/hook"},
+    )
+    assert WebhookEndpoint.objects.count() == 0
+
+    # an endpoint whose DNS later points somewhere private is refused at delivery
+    endpoint = WebhookEndpoint.objects.create(chapter=lead.chapter, url="https://rebound.example.com/hook")
+    deliver_webhook(endpoint.pk, "event.published", {})
+    assert calls == []
+    delivery = WebhookDelivery.objects.get()
+    assert delivery.delivered_at is None
+    assert "private or reserved" in delivery.error
 
 
 # --- Rev 3 integrations modernization -------------------------------------------
@@ -590,7 +626,7 @@ def test_announcement_task_fans_out_to_broadcast(settings, monkeypatch):
     )
     _send_announcement(event)
 
-    assert any("hooks.slack.com" in url for url, _ in calls)
+    assert any(url == settings.SLACK_WEBHOOK_URL for url, _ in calls)
 
 
 def test_leads_can_create_event_types_and_see_notification_log(client):

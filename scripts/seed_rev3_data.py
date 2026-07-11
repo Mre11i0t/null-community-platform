@@ -14,7 +14,9 @@ from datetime import timedelta
 from django.utils import timezone
 
 # Never bake "password" into seeded accounts. Pin a value with SEED_PASSWORD in
-# the env for reproducible logins, otherwise a strong one is generated + printed.
+# the env for reproducible logins; otherwise a strong random one is generated
+# and never printed — re-run with SEED_PASSWORD set if you need to log in
+# (the script is idempotent and resets every seeded account's password).
 SEED_PASSWORD = os.environ.get("SEED_PASSWORD") or ("null-seed-" + secrets.token_urlsafe(9))
 
 from django.conf import settings
@@ -206,5 +208,8 @@ print("Seeded Rev 3 data:")
 print(f"  primary (populated) chapter: {PRIMARY_CHAPTER} (subdomain {chapters[PRIMARY_CHAPTER].subdomain})")
 print(f"  chapters: {', '.join(c.subdomain for c in chapters.values())} (others are empty shells)")
 print(f"  users: lead@example.com / speaker@example.com / member1..6@example.com / admin@example.com")
-print(f"  seed password (all seeded users): {SEED_PASSWORD}  (pin via SEED_PASSWORD env)")
+if os.environ.get("SEED_PASSWORD"):
+    print("  seed password (all seeded users): your SEED_PASSWORD env value")
+else:
+    print("  seed password (all seeded users): randomly generated, not shown — re-run with SEED_PASSWORD set for known logins")
 print(f"  events: #{checkin_event.pk} check-in, #{full_event.pk} waitlist, #{invite_event.pk} approval, #{ended_event.pk} ended")

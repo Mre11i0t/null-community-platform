@@ -1,5 +1,6 @@
 import csv
 import json
+import logging
 
 from django.conf import settings
 from django.contrib import messages
@@ -24,6 +25,8 @@ from .forms import (
     LeadEventSessionForm,
     LeadVenueForm,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def require_leader(view_func):
@@ -311,11 +314,18 @@ def registration_mass_update(request, event_id):
 
     errors = []
     for item in payload.get("event_registrations", []):
+        reg_id = item.get("id") if isinstance(item, dict) else None
         try:
-            registration = event.event_registrations.get(pk=item["id"])
+            registration = event.event_registrations.get(pk=reg_id)
             registration.set_state(item["state"])
-        except Exception as exc:  # noqa: BLE001 — mirrors the original's broad rescue
-            errors.append({"registration_id": item.get("id"), "error_message": str(exc)})
+        except EventRegistration.DoesNotExist:
+            errors.append({"registration_id": reg_id, "error_message": "Registration not found"})
+        except (KeyError, TypeError, ValueError):
+            errors.append({"registration_id": reg_id, "error_message": "Invalid registration id or state"})
+        except Exception:  # noqa: BLE001 — one bad row must not kill the batch, but exception
+            # details stay in the server log rather than the response
+            logger.exception("mass_update failed for registration %s of event %s", reg_id, event.pk)
+            errors.append({"registration_id": reg_id, "error_message": "Update failed"})
 
     if errors:
         return JsonResponse({"status": "FAILED", "errors": errors})
@@ -736,16 +746,23 @@ def webhook_index(request):
     endpoints = WebhookEndpoint.objects.filter(chapter__in=chapters).select_related("chapter")
 
     if request.method == "POST":
+        from apps.notifications.webhooks import WebhookURLError, validate_webhook_url
+
         url = (request.POST.get("url") or "").strip()
         chapter = chapters.filter(pk=request.POST.get("chapter")).first()
-        if url.startswith("https://") and chapter:
-            endpoint = WebhookEndpoint.objects.create(chapter=chapter, url=url)
-            messages.success(
-                request,
-                f"Endpoint added. Signing secret (save it now): {endpoint.secret}",
-            )
+        if not chapter:
+            messages.error(request, "Endpoint must belong to your chapter.")
         else:
-            messages.error(request, "Endpoint must be https:// and belong to your chapter.")
+            try:
+                validate_webhook_url(url)
+            except WebhookURLError as exc:
+                messages.error(request, str(exc))
+            else:
+                endpoint = WebhookEndpoint.objects.create(chapter=chapter, url=url)
+                messages.success(
+                    request,
+                    f"Endpoint added. Signing secret (save it now): {endpoint.secret}",
+                )
         return redirect("leads:webhook_index")
 
     deliveries = WebhookDelivery.objects.filter(endpoint__in=endpoints).order_by("-created_at")[:30]

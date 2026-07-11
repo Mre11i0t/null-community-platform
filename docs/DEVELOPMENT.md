@@ -65,7 +65,7 @@ Two shell-piped seed scripts populate a dev database:
 | Script | Run | Purpose |
 |---|---|---|
 | `scripts/seed_dev_data.py` | `python manage.py shell < scripts/seed_dev_data.py` | Minimal data to exercise every route in the vertical slice — a chapter (Pune), lead, venue, event, an `EventSession`, an `EventRegistration`, a public profile, and a CMS page. |
-| `scripts/seed_rev3_data.py` | `python manage.py shell < scripts/seed_rev3_data.py` | Builds on the above with Rev 3 machinery: chapter subdomains/sites, check-in flags, a full-capacity (waitlist) event, an invite-only (approval queue) event, a just-ended event, CFP proposals, starred sessions, custom questions, and webhook/preference rows. Idempotent. Seed logins use `SEED_PASSWORD` from the env, else a strong random password is generated and printed. |
+| `scripts/seed_rev3_data.py` | `python manage.py shell < scripts/seed_rev3_data.py` | Builds on the above with Rev 3 machinery: chapter subdomains/sites, check-in flags, a full-capacity (waitlist) event, an invite-only (approval queue) event, a just-ended event, CFP proposals, starred sessions, custom questions, and webhook/preference rows. Idempotent. Seed logins use `SEED_PASSWORD` from the env, else a strong random password is generated (never printed — re-seed with `SEED_PASSWORD` set for known logins). |
 
 ### Chapter management commands
 
