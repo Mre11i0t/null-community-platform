@@ -15,7 +15,7 @@ drf-spectacular==0.30.0
 django-filter==24.3
 
 # Background jobs
-celery==5.4.0
+celery==5.6.3
 redis==5.2.1
 django-celery-beat==2.7.0
 django-celery-results==2.5.1
