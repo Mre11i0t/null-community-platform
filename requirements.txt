@@ -16,7 +16,7 @@ django-filter==24.3
 
 # Background jobs
 celery==5.4.0
-redis==5.2.1
+redis==8.0.1
 django-celery-beat==2.7.0
 django-celery-results==2.5.1
 
