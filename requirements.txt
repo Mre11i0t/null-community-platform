@@ -3,7 +3,7 @@ Django==5.1.15
 # build time, see Dockerfile). For local dev without that system lib,
 # PyMySQL is installed below as a pure-Python fallback.
 pymysql==1.1.1
-cryptography==49.0.0
+cryptography==50.0.0
 django-debug-toolbar==4.4.6
 
 # Auth
