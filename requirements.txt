@@ -1,4 +1,4 @@
-Django==5.1.15
+Django==5.2.16
 # mysqlclient is the production driver (requires libmysqlclient-dev at
 # build time, see Dockerfile). For local dev without that system lib,
 # PyMySQL is installed below as a pure-Python fallback.
